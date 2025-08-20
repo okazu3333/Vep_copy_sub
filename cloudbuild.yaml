@@ -1,0 +1,39 @@
+steps:
+  # Dockerイメージをビルド
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/alert-saas:$COMMIT_SHA', '.']
+
+  # イメージをGCRにプッシュ
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/alert-saas:$COMMIT_SHA']
+
+  # Cloud Runにデプロイ
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'alert-saas'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/alert-saas:$COMMIT_SHA'
+      - '--region'
+      - 'asia-northeast1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'BASIC_AUTH_USERNAME=admin,BASIC_AUTH_PASSWORD=${_BASIC_AUTH_PASSWORD},NODE_ENV=production'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--port'
+      - '3000'
+
+images:
+  - 'gcr.io/$PROJECT_ID/alert-saas:$COMMIT_SHA'
+
+substitutions:
+  _BASIC_AUTH_PASSWORD: 'cross-admin' # 安全なパスワードに変更

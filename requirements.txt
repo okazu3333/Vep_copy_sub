@@ -1,0 +1,8 @@
+# NLP分析用の依存関係
+spacy>=3.7.0
+ja-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ja_core_news_sm-3.7.0/ja_core_news_sm-3.7.0-py3-none-any.whl
+
+# その他の便利なライブラリ
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0 

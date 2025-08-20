@@ -1,0 +1,30 @@
+[
+  {
+    "name": "message_id",
+    "type": "STRING"
+  },
+  {
+    "name": "source_file",
+    "type": "STRING"
+  },
+  {
+    "name": "message_sender_decoded",
+    "type": "STRING"
+  },
+  {
+    "name": "message_subject_decoded",
+    "type": "STRING"
+  },
+  {
+    "name": "message_body_decoded",
+    "type": "STRING"
+  },
+  {
+    "name": "created_at",
+    "type": "TIMESTAMP"
+  },
+  {
+    "name": "processed_at",
+    "type": "TIMESTAMP"
+  }
+] 

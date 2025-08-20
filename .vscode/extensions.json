@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-typescript-next",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-git",
+    "eamodio.gitlens",
+    "ms-vscode.vscode-github",
+    "ms-vscode.vscode-github-pull-request-github"
+  ]
+} 
