@@ -28,23 +28,17 @@ export async function GET(request: NextRequest) {
         a.score,
         a.detected_keyword as keyword,
         a.department,
-        a.assigned_user_id,
         a.customer_email,
-        a.created_at as datetime,
-        a.updated_at,
-        a.resolved_at,
-        a.resolved_by,
-        a.resolution_note,
+        a.date as datetime,
         -- メール情報も取得
-        e.\`from\` as person,
-        e.subject as description,
-        e.body as messageBody,
-        e.thread_id,
-        e.reply_level,
-        e.is_root,
-        e.source_file
-      FROM \`viewpers.salesguard_alerts.alerts\` a
-      LEFT JOIN \`viewpers.salesguard_alerts.email_messages\` e ON a.message_id = e.message_id
+        a.\`from\` as person,
+        a.subject as description,
+        a.body as messageBody,
+        a.thread_id,
+        a.reply_level,
+        a.is_root,
+        a.source_file
+      FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\` a
       WHERE 1=1
     `
 
@@ -54,9 +48,9 @@ export async function GET(request: NextRequest) {
     // 検索条件の追加
     if (search) {
       query += ` AND (
-        e.\`from\` LIKE @param${paramIndex} OR
-        e.subject LIKE @param${paramIndex} OR
-        e.body LIKE @param${paramIndex} OR
+        a.\`from\` LIKE @param${paramIndex} OR
+        a.subject LIKE @param${paramIndex} OR
+        a.body LIKE @param${paramIndex} OR
         a.customer_email LIKE @param${paramIndex}
       )`
       queryParams.push({ name: `param${paramIndex}`, value: `%${search}%` })
@@ -81,7 +75,7 @@ export async function GET(request: NextRequest) {
       paramIndex++
     }
 
-    query += ` ORDER BY a.created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    query += ` ORDER BY a.date DESC LIMIT ${limit} OFFSET ${offset}`
 
     const [rows] = await bigquery.query({ 
       query,
@@ -107,23 +101,18 @@ export async function GET(request: NextRequest) {
       isRoot: row.is_root,
       sourceFile: row.source_file,
       // 追加フィールド
-      messageId: row.message_id,
-      assignedUserId: row.assigned_user_id,
-      resolvedAt: row.resolved_at,
-      resolvedBy: row.resolved_by,
-      resolutionNote: row.resolution_note
+      messageId: row.message_id
     }))
 
     // 総件数取得
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM \`viewpers.salesguard_alerts.alerts\` a
-      LEFT JOIN \`viewpers.salesguard_alerts.email_messages\` e ON a.message_id = e.message_id
+      FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\` a
       WHERE 1=1
       ${search ? `AND (
-        e.\`from\` LIKE '%${search}%' OR
-        e.subject LIKE '%${search}%' OR
-        e.body LIKE '%${search}%' OR
+        a.\`from\` LIKE '%${search}%' OR
+        a.subject LIKE '%${search}%' OR
+        a.body LIKE '%${search}%' OR
         a.customer_email LIKE '%${search}%'
       )` : ''}
       ${status ? `AND a.status = '${status}'` : ''}

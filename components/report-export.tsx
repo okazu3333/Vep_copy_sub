@@ -13,16 +13,7 @@ interface ReportExportProps {
   period: string
   reportType: string
   onExport: (format: 'pdf' | 'excel' | 'csv') => void
-  data?: {
-    totalAlerts: number
-    totalResolved: number
-    totalPending: number
-    resolutionRate: number
-    avgResponseTime: number
-    alertChangePercent: number
-    topPerformers: any[]
-    highRiskDepartments: any[]
-  }
+  data?: any // レポートデータの型を柔軟に
 }
 
 export function ReportExport({

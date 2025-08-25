@@ -18,12 +18,11 @@ import { useState } from "react"
 
 const menuItems = [
   { href: "/alerts", label: "アラート一覧", icon: AlertTriangle },
+  { href: "/reports", label: "レポート", icon: BarChart3 },
   { href: "/keywords/segments", label: "フレーズ設定", icon: Settings },
   { href: "/users", label: "ユーザー管理", icon: Users },
   { href: "/notifications", label: "通知管理", icon: Bell },
-  { href: "/dashboard", label: "レポート", icon: BarChart3 },
   { href: "/customers", label: "顧客情報管理", icon: Database },
-
 ]
 
 export function Sidebar() {
