@@ -2006,7 +2006,7 @@ function AlertsPageInner() {
                   <div className="space-y-2">
                     {filteredAlerts.map((alert: any, index: number) => (
                       <div
-                        key={`${alert.thread_id || alert.id || index}`}
+                        key={`${alert.id || (alert.thread_id ? alert.thread_id + '-' + index : index)}`}
                         className={`${density === 'compact' ? 'p-2' : 'p-3'} border rounded-lg hover:shadow-md transition-all cursor-pointer bg-card hover:bg-accent/50 border-l-4 ${
                            alert.priority === 'high'
                              ? 'border-l-red-500'
@@ -2097,8 +2097,8 @@ function AlertsPageInner() {
                         <div className="p-3 space-y-2">
                           {kanbanColumns[col.key].map((alert: any, index: number) => (
                             <div
-                              key={`${alert.thread_id || alert.id || index}`}
-                              className="p-3 border rounded-lg hover:shadow-sm transition-all cursor-pointer bg-background"
+                              key={`${alert.id || (alert.thread_id ? alert.thread_id + '-' + index : index)}`}
+                              className="border rounded p-2 bg-background hover:bg-accent/50 cursor-pointer"
                               onClick={() => handleAlertClick(alert)}
                             >
                               <div className="flex items-center justify-between mb-1">
