@@ -117,6 +117,14 @@ function AlertDetailModal({
   const [messageCurrentPage, setMessageCurrentPage] = useState(1)
   const [messagePageSize, setMessagePageSize] = useState(20)
 
+  // ユニークなメッセージキー生成（安定化）
+  const getMessageKey = useCallback((m: any, idx: number) => {
+    const base = m?.message_id || m?.alert_id || ''
+    const lvl = m?.reply_level ?? ''
+    const ts = m?.created_at || m?.date || ''
+    return base ? `${base}|${lvl}|${ts}` : `row-${idx}-${ts}`
+  }, [])
+
   // アラートが変更された際にページネーションとメッセージをリセット
   useEffect(() => {
     setMessageCurrentPage(1)
@@ -223,8 +231,8 @@ function AlertDetailModal({
   // すべてのメッセージを開く
   const openAllMessages = () => {
     if (modalMessages) {
-      const allMessageIds = modalMessages.map((msg: any) => 
-        msg.message_id || msg.alert_id || `msg-${Date.now()}`
+      const allMessageIds = modalMessages.map((msg: any, idx: number) => 
+        getMessageKey(msg, idx)
       )
       setOpenMessages(new Set(allMessageIds))
     }
@@ -1062,14 +1070,23 @@ function AlertDetailModal({
                           isFromCompany
                         }
                       })
+
+                      // 重複メッセージ除去（message_id, reply_level, timestampでユニーク化）
+                      const seen = new Set<string>()
+                      const withKeys = categorizedMessages.map((m: any, idx: number) => ({ m, key: getMessageKey(m, idx) }))
+                      const unique = withKeys.filter(({ key }) => {
+                        if (seen.has(key)) return false
+                        seen.add(key)
+                        return true
+                      })
                       
-                      return categorizedMessages.map((message: any, idx: number) => (
+                      return unique.map(({ m, key }, idx: number) => (
                         <ThreadChatMessage
-                          key={message.message_id || message.alert_id || idx}
-                          message={message}
-                          isRoot={message.is_root === true}
-                          isOpen={openMessages.has((message.message_id || message.alert_id || `row-${idx}`) as string)}
-                          onToggle={() => toggleMessage((message.message_id || message.alert_id || `row-${idx}`) as string)}
+                          key={key}
+                          message={m}
+                          isRoot={m.is_root === true}
+                          isOpen={openMessages.has(key)}
+                          onToggle={() => toggleMessage(key)}
                         />
                       ))
                     })()}
