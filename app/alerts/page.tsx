@@ -184,7 +184,7 @@ function AlertDetailModal({
   }, [isOpen, alert?.thread_id, alert?.threadId, modalMessages?.length, modalRetry])
 
   // 完全表示（full再取得）
-  const refetchFull = async () => {
+  const refetchFull = useCallback(async () => {
     try {
       const threadId = alert?.thread_id || alert?.threadId
       if (!threadId) return
@@ -213,7 +213,7 @@ function AlertDetailModal({
     } finally {
       setModalLoading(false)
     }
-  }
+  }, [alert?.thread_id, alert?.threadId])
 
   // メッセージの開閉状態を切り替える
   const toggleMessage = (messageId: string) => {
@@ -1071,9 +1071,9 @@ function AlertDetailModal({
                         }
                       })
 
-                      // 重複メッセージ除去（message_id, reply_level, timestampでユニーク化）
+                      // 重複メッセージ除去（message_keyベース）
                       const seen = new Set<string>()
-                      const withKeys = categorizedMessages.map((m: any, idx: number) => ({ m, key: getMessageKey(m, idx) }))
+                      const withKeys = categorizedMessages.map((m: any, idx: number) => ({ m, key: m.message_key || getMessageKey(m, idx) }))
                       const unique = withKeys.filter(({ key }) => {
                         if (seen.has(key)) return false
                         seen.add(key)

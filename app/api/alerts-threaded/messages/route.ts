@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
           m.is_root,
           m.body_gcs_uri AS source_file,
           n.in_reply_to AS in_reply_to,
-          n.references AS \`references\`
+          n.references AS \`references\`,
+          CONCAT(COALESCE(m.message_id, ''), '|', COALESCE(CAST(m.reply_level AS STRING), ''), '|', COALESCE(CAST(m.date AS STRING), '')) AS message_key
         FROM \`viewpers.salesguard_alerts.email_messages_threaded_v1\` m
         LEFT JOIN \`viewpers.salesguard_alerts.email_messages_normalized\` n
           ON n.message_id = m.message_id
@@ -66,7 +67,8 @@ export async function GET(request: NextRequest) {
           is_root,
           source_file,
           CAST(NULL AS STRING) AS in_reply_to,
-          CAST(NULL AS STRING) AS \`references\`
+          CAST(NULL AS STRING) AS \`references\`,
+          CONCAT(COALESCE(message_id, ''), '|', COALESCE(CAST(reply_level AS STRING), ''), '|', COALESCE(CAST(datetime AS STRING), '')) AS message_key
         FROM \`viewpers.salesguard_alerts.alerts_v2_scored\`
         WHERE thread_id = @thread_id
         ORDER BY reply_level ASC, date ASC
@@ -90,7 +92,18 @@ export async function GET(request: NextRequest) {
     })
     const totalCount = Number(countRows?.[0]?.totalCount || rows.length || 0)
 
-    const response = NextResponse.json({ success: true, messages: rows, totalCount })
+    // ユニーク件数（message_keyベース）
+    const seen = new Set<string>()
+    let uniqueCount = 0
+    for (const r of rows as any[]) {
+      const key = r.message_key as string
+      if (!seen.has(key)) {
+        seen.add(key)
+        uniqueCount += 1
+      }
+    }
+
+    const response = NextResponse.json({ success: true, messages: rows, totalCount, returnedCount: rows.length, uniqueCount })
     response.headers.set('Cache-Control', 'public, max-age=120, s-maxage=120')
     response.headers.set('CDN-Cache-Control', 'public, max-age=120')
     response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=120')
