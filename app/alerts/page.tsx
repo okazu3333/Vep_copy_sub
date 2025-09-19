@@ -306,6 +306,7 @@ function AlertDetailModal({
     onToggle: () => void 
   }) => {
     const isCompany = !!message.isFromCompany
+    const direction = isCompany ? 'Outbound' : 'Inbound'
     return (
       <div className={`flex ${isCompany ? 'justify-end' : 'justify-start'}`}>
         <div className={`max-w-[85%] ${isCompany ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'} border rounded-lg`}>
@@ -318,6 +319,9 @@ function AlertDetailModal({
                 <div className={`w-3 h-3 ${isCompany ? 'bg-blue-500' : 'bg-gray-400'} rounded-full flex-shrink-0`}></div>
                 <div className="flex-1 min-w-0">
                   <div className={`flex items-center ${isCompany ? 'justify-end' : ''} gap-2 mb-1`}>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/70 border">
+                      {direction}
+                    </span>
                     <span className="text-sm font-medium text-foreground truncate">
                       {message.sender || '送信者不明'}
                     </span>
@@ -334,6 +338,12 @@ function AlertDetailModal({
                   <div className={`text-[11px] text-muted-foreground ${isCompany ? 'text-right' : 'text-left'}`}>
                     {(message.sender || '')} → {(message.recipient || '不明')}
                   </div>
+                  {message.in_reply_to && (
+                    <div className={`text-[11px] text-muted-foreground mt-0.5 ${isCompany ? 'text-right' : 'text-left'}`}>返信先: {message.in_reply_to}</div>
+                  )}
+                  {message.references && (
+                    <div className={`text-[11px] text-muted-foreground mt-0.5 ${isCompany ? 'text-right' : 'text-left'}`}>参照: {String(message.references).slice(0, 120)}{String(message.references).length > 120 ? '…' : ''}</div>
+                  )}
                   {message.message_subject && (
                     <h5 className="text-sm font-medium text-foreground truncate mt-1">
                       {message.message_subject}
