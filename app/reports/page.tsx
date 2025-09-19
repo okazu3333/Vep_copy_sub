@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { RefreshCw, TrendingUp, AlertTriangle, Users, Target, BarChart3 } from 'lucide-react'
 import { ReportExport } from '@/components/report-export'
+import { useRouter } from 'next/navigation'
 
 interface ReportData {
   currentStatus: {
@@ -64,6 +65,24 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('7d')
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  const computeRange = (p: string) => {
+    const now = new Date()
+    const end = now.toISOString()
+    const d = new Date(now)
+    if (p === '90d') d.setDate(d.getDate() - 90)
+    else if (p === '30d') d.setDate(d.getDate() - 30)
+    else d.setDate(d.getDate() - 7)
+    const start = d.toISOString()
+    return { start, end }
+  }
+
+  const goAlerts = (params: Record<string, string>) => {
+    const { start, end } = computeRange(period)
+    const usp = new URLSearchParams({ start, end, trace: 'dashboard', ...params })
+    router.push(`/alerts?${usp.toString()}`)
+  }
 
   const fetchReportData = async () => {
     try {
@@ -187,26 +206,26 @@ export default function ReportsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="text-center">
+            <button className="text-center" onClick={() => goAlerts({})}>
               <div className="text-2xl font-bold text-blue-600">{String(safeData.currentStatus.totalAlerts || 0)}</div>
               <div className="text-sm text-gray-600">総アラート数</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button className="text-center" onClick={() => goAlerts({ status: 'pending' })}>
               <div className="text-2xl font-bold text-red-600">{String(safeData.currentStatus.pendingCases || 0)}</div>
               <div className="text-sm text-gray-600">未対応</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button className="text-center" onClick={() => goAlerts({ status: 'in_progress' })}>
               <div className="text-2xl font-bold text-yellow-600">{String(safeData.currentStatus.inProgressCases || 0)}</div>
               <div className="text-sm text-gray-600">対応中</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button className="text-center" onClick={() => goAlerts({ status: 'resolved' })}>
               <div className="text-2xl font-bold text-green-600">{String(safeData.currentStatus.resolvedCases || 0)}</div>
               <div className="text-sm text-gray-600">解決済み</div>
-            </div>
-            <div className="text-center">
+            </button>
+            <button className="text-center" onClick={() => goAlerts({})}>
               <div className="text-2xl font-bold text-purple-600">{String(safeData.currentStatus.todayNewCases || 0)}</div>
               <div className="text-sm text-gray-600">本日新規</div>
-            </div>
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -224,7 +243,7 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {safeData.priorityDistribution.length > 0 ? (
               safeData.priorityDistribution.map((item, index) => (
-                <div key={`${item.priority}-${index}`} className="text-center">
+                <button key={`${item.priority}-${index}`} className="text-center" onClick={() => goAlerts({ priority: String(item.priority || '') })}>
                   <div className="text-2xl font-bold">
                     {item.priority === '緊急' && <span className="text-red-600">{String(item.count || 0)}</span>}
                     {item.priority === '高' && <span className="text-orange-600">{String(item.count || 0)}</span>}
@@ -234,7 +253,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="text-sm text-gray-600">{String(item.priority || '')}</div>
                   <div className="text-xs text-gray-500">{String(item.count || 0)}件</div>
-                </div>
+                </button>
               ))
             ) : (
               <div className="col-span-4 text-center text-gray-500 py-8">
