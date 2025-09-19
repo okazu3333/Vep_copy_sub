@@ -112,6 +112,9 @@ function AlertDetailModal({
   const [modalRetry, setModalRetry] = useState(0)
   // 追加: 総件数
   const [modalTotalCount, setModalTotalCount] = useState<number | null>(null)
+  // 追加: 戻り件数/ユニーク件数
+  const [modalReturnedCount, setModalReturnedCount] = useState<number | null>(null)
+  const [modalUniqueCount, setModalUniqueCount] = useState<number | null>(null)
 
   // メッセージページネーション用のstate
   const [messageCurrentPage, setMessageCurrentPage] = useState(1)
@@ -131,6 +134,9 @@ function AlertDetailModal({
     setOpenMessages(new Set())
     setModalMessages(alert?.messages || [])
     setModalRetry(0)
+    setModalTotalCount(null)
+    setModalReturnedCount(null)
+    setModalUniqueCount(null)
   }, [alert?.id])
 
   // モーダル表示時、messagesが空ならスレッドメッセージを取得
@@ -159,6 +165,8 @@ function AlertDetailModal({
             }))
             setModalMessages(normalized)
             if (typeof data.totalCount === 'number') setModalTotalCount(data.totalCount)
+            if (typeof data.returnedCount === 'number') setModalReturnedCount(data.returnedCount)
+            if (typeof data.uniqueCount === 'number') setModalUniqueCount(data.uniqueCount)
             setModalLoading(false)
             // 取得件数が総計に満たない場合は自動で full 取得
             if ((typeof data.totalCount === 'number') && normalized.length < data.totalCount) {
@@ -206,6 +214,8 @@ function AlertDetailModal({
           }))
           setModalMessages(normalized)
           if (typeof data.totalCount === 'number') setModalTotalCount(data.totalCount)
+          if (typeof data.returnedCount === 'number') setModalReturnedCount(data.returnedCount)
+          if (typeof data.uniqueCount === 'number') setModalUniqueCount(data.uniqueCount)
         }
       }
     } catch (e) {
@@ -996,9 +1006,9 @@ function AlertDetailModal({
                       >
                         すべて閉じる
                       </Button>
-                      {modalTotalCount !== null && (modalMessages?.length || 0) < modalTotalCount && (
+                      {modalTotalCount !== null && (modalReturnedCount || 0) < modalTotalCount && (
                         <Button variant="default" size="sm" onClick={refetchFull} className="text-xs">
-                          完全表示 ({modalMessages.length}/{modalTotalCount})
+                          完全表示 ({modalReturnedCount || 0}/{modalTotalCount})
                         </Button>
                       )}
                     </div>
@@ -1009,9 +1019,18 @@ function AlertDetailModal({
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
                     <span>
                       {(() => {
-                        const loaded = (modalMessages || []).length
-                        const total = modalTotalCount ?? loaded
-                        return `表示 ${loaded} / 総計 ${total}`
+                        const loaded = modalReturnedCount ?? (modalMessages || []).length
+                        const unique = modalUniqueCount ?? (() => {
+                          const seen = new Set<string>()
+                          let c = 0
+                          for (const m of (modalMessages || [])) {
+                            const k = (m as any).message_id || (m as any).message_key || ''
+                            if (!seen.has(k)) { seen.add(k); c++ }
+                          }
+                          return c
+                        })()
+                        const total = modalTotalCount ?? Math.max(loaded, unique)
+                        return `表示 ${loaded} / ユニーク ${unique} / 総計 ${total}`
                       })()}
                     </span>
                     <div className="flex items-center gap-2">
@@ -1071,10 +1090,11 @@ function AlertDetailModal({
                         }
                       })
 
-                      // 重複メッセージ除去（message_keyベース）
+                      // 重複メッセージ除去（message_keyベース、message_id優先）
                       const seen = new Set<string>()
-                      const withKeys = categorizedMessages.map((m: any, idx: number) => ({ m, key: m.message_key || getMessageKey(m, idx) }))
+                      const withKeys = categorizedMessages.map((m: any, idx: number) => ({ m, key: (m.message_id || m.message_key || getMessageKey(m, idx)) as string }))
                       const unique = withKeys.filter(({ key }) => {
+                        if (!key) return true
                         if (seen.has(key)) return false
                         seen.add(key)
                         return true
