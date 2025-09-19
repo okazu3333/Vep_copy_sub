@@ -107,6 +107,11 @@ function AlertDetailModal({
   const [openMessages, setOpenMessages] = useState<Set<string>>(new Set())
   // 追加: モーダル内でメッセージをオンデマンド取得
   const [modalMessages, setModalMessages] = useState<any[]>(alert?.messages || [])
+  // 追加: ローディングとリトライ回数
+  const [modalLoading, setModalLoading] = useState(false)
+  const [modalRetry, setModalRetry] = useState(0)
+  // 追加: 総件数
+  const [modalTotalCount, setModalTotalCount] = useState<number | null>(null)
 
   // メッセージページネーション用のstate
   const [messageCurrentPage, setMessageCurrentPage] = useState(1)
@@ -117,6 +122,7 @@ function AlertDetailModal({
     setMessageCurrentPage(1)
     setOpenMessages(new Set())
     setModalMessages(alert?.messages || [])
+    setModalRetry(0)
   }, [alert?.id])
 
   // モーダル表示時、messagesが空ならスレッドメッセージを取得
@@ -125,23 +131,81 @@ function AlertDetailModal({
       try {
         if (!isOpen) return
         if (modalMessages && modalMessages.length > 0) return
-        const threadId = alert?.thread_id
+        const threadId = alert?.thread_id || alert?.threadId
         if (!threadId) return
-        const resp = await fetch(`/api/alerts-threaded/messages?thread_id=${encodeURIComponent(threadId)}`, {
+        setModalLoading(true)
+        const resp = await fetch(`/api/alerts-threaded/messages?mode=fast&limit=50&thread_id=${encodeURIComponent(threadId)}`, {
           headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` }
         })
         if (resp.ok) {
           const data = await resp.json()
           if (data?.success) {
-            setModalMessages(Array.isArray(data.messages) ? data.messages : [])
+            const msgs = Array.isArray(data.messages) ? data.messages : []
+            const normalized = msgs.map((m: any) => ({
+              ...m,
+              created_at: m.created_at || m.date,
+              sender: m.from || m.sender,
+              recipient: m.to || m.recipient,
+              message_subject: m.subject || m.message_subject,
+              body: m.body ? extractNewContent(m.body) : m.body,
+            }))
+            setModalMessages(normalized)
+            if (typeof data.totalCount === 'number') setModalTotalCount(data.totalCount)
+            setModalLoading(false)
+            // 取得件数が総計に満たない場合は自動で full 取得
+            if ((typeof data.totalCount === 'number') && normalized.length < data.totalCount) {
+              refetchFull()
+            } else if (normalized.length === 0 && modalRetry < 2) {
+              setTimeout(() => setModalRetry((n) => n + 1), 800)
+            }
+          } else {
+            setModalLoading(false)
+            if (modalRetry < 2) setTimeout(() => setModalRetry((n) => n + 1), 800)
           }
+        } else {
+          setModalLoading(false)
+          if (modalRetry < 2) setTimeout(() => setModalRetry((n) => n + 1), 800)
         }
       } catch (e) {
         console.error('スレッドメッセージ取得エラー:', e)
+        setModalLoading(false)
+        if (modalRetry < 2) setTimeout(() => setModalRetry((n) => n + 1), 800)
       }
     }
     fetchThreadMessages()
-  }, [isOpen, alert?.thread_id])
+  }, [isOpen, alert?.thread_id, alert?.threadId, modalMessages?.length, modalRetry])
+
+  // 完全表示（full再取得）
+  const refetchFull = async () => {
+    try {
+      const threadId = alert?.thread_id || alert?.threadId
+      if (!threadId) return
+      setModalLoading(true)
+      const resp = await fetch(`/api/alerts-threaded/messages?mode=full&days=1&limit=500&thread_id=${encodeURIComponent(threadId)}`, {
+        headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` }
+      })
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data?.success) {
+          const msgs = Array.isArray(data.messages) ? data.messages : []
+          const normalized = msgs.map((m: any) => ({
+            ...m,
+            created_at: m.created_at || m.date,
+            sender: m.from || m.sender,
+            recipient: m.to || m.recipient,
+            message_subject: m.subject || m.message_subject,
+            body: m.body ? extractNewContent(m.body) : m.body,
+          }))
+          setModalMessages(normalized)
+          if (typeof data.totalCount === 'number') setModalTotalCount(data.totalCount)
+        }
+      }
+    } catch (e) {
+      console.error('完全表示取得エラー:', e)
+    } finally {
+      setModalLoading(false)
+    }
+  }
 
   // メッセージの開閉状態を切り替える
   const toggleMessage = (messageId: string) => {
@@ -223,72 +287,68 @@ function AlertDetailModal({
     isOpen: boolean, 
     onToggle: () => void 
   }) => {
+    const isCompany = !!message.isFromCompany
     return (
-      <div className={`border rounded-lg ${isRoot ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'}`}>
-        {/* メッセージヘッダー（クリック可能） */}
-        <div 
-          className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={onToggle}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              {isRoot ? (
-                <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
-              ) : (
-                <div className="w-3 h-3 bg-gray-400 rounded-full flex-shrink-0"></div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {message.sender || '送信者不明'}
-                  </span>
-                  {isRoot && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex-shrink-0">
-                      ルート
+      <div className={`flex ${isCompany ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-[85%] ${isCompany ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'} border rounded-lg`}>
+          <div 
+            className={`p-3 cursor-pointer hover:bg-opacity-80 transition-colors ${isCompany ? 'text-right' : 'text-left'}`}
+            onClick={onToggle}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className={`flex items-center gap-2 ${isCompany ? 'flex-row-reverse' : ''} flex-1 min-w-0`}>
+                <div className={`w-3 h-3 ${isCompany ? 'bg-blue-500' : 'bg-gray-400'} rounded-full flex-shrink-0`}></div>
+                <div className="flex-1 min-w-0">
+                  <div className={`flex items-center ${isCompany ? 'justify-end' : ''} gap-2 mb-1`}>
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {message.sender || '送信者不明'}
                     </span>
+                    {isRoot && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex-shrink-0">
+                        ルート
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {formatDate(message.created_at)}
+                    </span>
+                  </div>
+                  {/* 方向表示: From → To */}
+                  <div className={`text-[11px] text-muted-foreground ${isCompany ? 'text-right' : 'text-left'}`}>
+                    {(message.sender || '')} → {(message.recipient || '不明')}
+                  </div>
+                  {message.message_subject && (
+                    <h5 className="text-sm font-medium text-foreground truncate mt-1">
+                      {message.message_subject}
+                    </h5>
                   )}
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {formatDate(message.created_at)}
-                  </span>
                 </div>
-                
-                {message.message_subject && (
-                  <h5 className="text-sm font-medium text-foreground truncate">
-                    {message.message_subject}
-                  </h5>
-                )}
               </div>
-            </div>
-            
-            {/* 開閉アイコン */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+              <div className={`flex items-center gap-2 flex-shrink-0 ${isCompany ? 'order-first' : ''}`}>
+                <div className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
+          {isOpen && (
+            <div className={`px-3 pb-3 border-t ${isCompany ? 'border-blue-100' : 'border-gray-100'}`}>
+              {message.body && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground mb-2 font-medium">メッセージ内容</div>
+                  <div className="text-sm text-foreground bg-white p-3 rounded-lg max-h-48 overflow-y-auto">
+                    {extractNewContent(message.body || '')}
+                  </div>
+                </div>
+              )}
+              <div className="mt-3 text-xs text-muted-foreground">
+                <div>メッセージID: {message.message_id}</div>
+                {message.source_file && <div>ソース: {message.source_file}</div>}
+              </div>
+            </div>
+          )}
         </div>
-        
-        {/* メッセージ内容（開閉可能） */}
-        {isOpen && (
-          <div className="px-3 pb-3 border-t border-gray-100">
-            {message.body && (
-              <div className="mt-3">
-                <div className="text-xs text-muted-foreground mb-2 font-medium">メッセージ内容</div>
-                <div className="text-sm text-foreground bg-gray-50 p-3 rounded-lg max-h-48 overflow-y-auto">
-                  {message.body}
-                </div>
-              </div>
-            )}
-            
-            <div className="mt-3 text-xs text-muted-foreground">
-              <div>メッセージID: {message.message_id}</div>
-              {message.source_file && <div>ソース: {message.source_file}</div>}
-            </div>
-          </div>
-        )}
       </div>
     )
   }
@@ -326,7 +386,7 @@ function AlertDetailModal({
         
         {message.body && (
           <p className="text-sm text-muted-foreground line-clamp-3">
-            {message.body}
+            {extractNewContent(message.body || '')}
           </p>
         )}
         
@@ -890,14 +950,25 @@ function AlertDetailModal({
             className="overflow-y-auto max-h-[calc(98vh-250px)]"
           >
             {/* メッセージ履歴 */}
-            {modalMessages && modalMessages.length > 0 && (
+            {modalLoading && (
+              <Card>
+                <CardContent>
+                  <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>メッセージを読み込み中...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!modalLoading && modalMessages && modalMessages.length > 0 && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-lg">メッセージ履歴</CardTitle>
                       <CardDescription>
-                        チャットスレッド形式（左：クライアント、右：自社）
+                        左: クライアント / 右: 自社（@cross-m.co.jp系）
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
@@ -917,6 +988,11 @@ function AlertDetailModal({
                       >
                         すべて閉じる
                       </Button>
+                      {modalTotalCount !== null && (modalMessages?.length || 0) < modalTotalCount && (
+                        <Button variant="default" size="sm" onClick={refetchFull} className="text-xs">
+                          完全表示 ({modalMessages.length}/{modalTotalCount})
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -924,17 +1000,11 @@ function AlertDetailModal({
                   {/* ページネーション情報 */}
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
                     <span>
-                      全{(() => {
-                        const uniqueMessages = modalMessages.reduce((acc: any[], message: any) => {
-                          const messageId = message.message_id || message.alert_id
-                          const exists = acc.find(m => (m.message_id || m.alert_id) === messageId)
-                          if (!exists) {
-                            acc.push(message)
-                          }
-                          return acc
-                        }, [])
-                        return uniqueMessages.length
-                      })()}件のメッセージ
+                      {(() => {
+                        const loaded = (modalMessages || []).length
+                        const total = modalTotalCount ?? loaded
+                        return `表示 ${loaded} / 総計 ${total}`
+                      })()}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs">1ページあたり:</span>
@@ -957,18 +1027,9 @@ function AlertDetailModal({
 
                   <div className="space-y-4 max-h-96 overflow-y-auto">
                     {(() => {
-                      // 重複メッセージを除去（message_idで重複チェック）
-                      const uniqueMessages = modalMessages.reduce((acc: any[], message: any) => {
-                        const messageId = message.message_id || message.alert_id
-                        const exists = acc.find(m => (m.message_id || m.alert_id) === messageId)
-                        if (!exists) {
-                          acc.push(message)
-                        }
-                        return acc
-                      }, [])
-                      
+                      const items = modalMessages || []
                       // メッセージを受信・送信別に分類
-                      const categorizedMessages = uniqueMessages.map((message: any) => {
+                      const categorizedMessages = items.map((message: any) => {
                         const sender = message.from || message.sender || ''
                         const to = message.to || ''
                         
@@ -977,29 +1038,19 @@ function AlertDetailModal({
                         
                         // 転送サービス経由のメールの場合の処理
                         if (sender.includes('via') || sender.includes('Via')) {
-                          // "via"が含まれている場合、元の顧客ドメインを抽出
                           const viaMatch = sender.match(/['"]([^'"]+)['"]\s+via\s+[^<]+<([^>]+)>/)
                           if (viaMatch) {
-                            const originalSender = viaMatch[1] // 元の送信者名
-                            const forwardingDomain = viaMatch[2] // 転送ドメイン
-                            
-                            // 転送ドメインが自社ドメインの場合、元の送信者は顧客
+                            const forwardingDomain = viaMatch[2]
                             if (forwardingDomain.includes('@cross-m.co.jp')) {
-                              isFromCompany = false // 顧客からの受信
-                            } else {
-                              isFromCompany = true // 自社からの送信
-                            }
-                          } else {
-                            // viaパターンが解析できない場合は、転送ドメインで判断
-                            if (sender.includes('@cross-m.co.jp')) {
                               isFromCompany = true
                             } else {
-                              isFromCompany = false
+                              isFromCompany = sender.match(/@cross-m\.co\.jp/i) !== null
                             }
+                          } else {
+                            isFromCompany = sender.match(/@cross-m\.co\.jp/i) !== null
                           }
                         }
                         
-                        // 直接ドメイン判定
                         if (!isFromCompany) {
                           if (sender.match(/@cross-m\.co\.jp/i)) {
                             isFromCompany = true
@@ -1012,13 +1063,13 @@ function AlertDetailModal({
                         }
                       })
                       
-                      return categorizedMessages.map((message: any) => (
+                      return categorizedMessages.map((message: any, idx: number) => (
                         <ThreadChatMessage
-                          key={message.message_id || message.alert_id}
+                          key={message.message_id || message.alert_id || idx}
                           message={message}
                           isRoot={message.is_root === true}
-                          isOpen={openMessages.has(message.message_id || message.alert_id)}
-                          onToggle={() => toggleMessage(message.message_id || message.alert_id)}
+                          isOpen={openMessages.has((message.message_id || message.alert_id || `row-${idx}`) as string)}
+                          onToggle={() => toggleMessage((message.message_id || message.alert_id || `row-${idx}`) as string)}
                         />
                       ))
                     })()}
@@ -1027,11 +1078,16 @@ function AlertDetailModal({
               </Card>
             )}
 
-            {(!modalMessages || modalMessages.length === 0) && (
+            {!modalLoading && (!modalMessages || modalMessages.length === 0) && (
               <Card>
                 <CardContent>
-                  <div className="text-sm text-muted-foreground py-8 text-center">
-                    メッセージはまだ読み込まれていません。詳細を開くと自動取得します。
+                  <div className="flex items-center justify-between py-8">
+                    <div className="text-sm text-muted-foreground">
+                      メッセージはまだ読み込まれていません。詳細を開くと自動取得します。
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setModalRetry((n) => n + 1)}>
+                      再読み込み
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1205,17 +1261,17 @@ function AlertsPageInner() {
         // アラートデータの正規化
         const normalizedAlerts = (data.alerts || []).map((alert: any, index: number) => {
           // 一意のIDを確実に生成
-          const uniqueId = alert.id || alert.thread_id || `alert-${index}-${Date.now()}`
-          const uniqueThreadId = alert.thread_id || `thread-${uniqueId}`
+          const uniqueId = alert.id || alert.thread_id || alert.threadId || `alert-${index}-${Date.now()}`
+          const uniqueThreadId = alert.thread_id || alert.threadId || `thread-${uniqueId}`
           
           return {
             // スレッド情報を確実に含める
             id: uniqueId,
             thread_id: uniqueThreadId,
             // 件名はAPIから返されるものをそのまま使用（重複を防ぐ）
-            subject: alert.subject || '件名なし',
+            subject: alert.subject || alert.description || '件名なし',
             keyword: decodeHtmlEntities(alert.keyword || 'キーワードなし'),
-            sender: decodeHtmlEntities(alert.sender || '送信者不明'),
+            sender: decodeHtmlEntities(alert.sender || alert.person || '送信者不明'),
             customer_email: decodeHtmlEntities(alert.customer_email || 'メール不明'),
             // 日付フォーマットの統一
             created_at: alert.created_at || alert.datetime,
@@ -1227,7 +1283,7 @@ function AlertsPageInner() {
             // メッセージ数
             message_count: alert.message_count || 1,
             // その他の必要なフィールド
-            body: alert.body,
+            body: alert.body || alert.messageBody,
             messages: alert.messages,
             // 感情分析とマッピング結果を保持
             sentiment: alert.sentiment,
@@ -2226,4 +2282,33 @@ export default function AlertsPage() {
       <AlertsPageInner />
     </Suspense>
   )
+}
+
+// 自社グループドメイン判定用
+const COMPANY_DOMAIN_REGEX = /@(?:ml\.)?cross-m\.co\.jp/i
+
+// 引用部除去（新規本文抽出）
+function extractNewContent(raw: string): string {
+  if (!raw) return ''
+  try {
+    // 最も一般的な区切りで先頭部分を抽出
+    const separators = [
+      /\n-{2,}\s*Original Message\s*-{2,}/i,
+      /\nOn .* wrote:\n/i,
+      /\nFrom:\s.*\nSent:\s.*\nTo:\s.*\nSubject:\s.*/i,
+      /\n> .*/,
+      /\n-----\s*Forwarded message\s*-----/i,
+      /\n開始メッセージ:/, // 日本語系パターン（ダミー）
+    ]
+    for (const sep of separators) {
+      const idx = raw.search(sep)
+      if (idx > 0) return raw.slice(0, idx).trim()
+    }
+    // フォールバック: 先頭の引用行（>）を除去
+    const lines = raw.split(/\r?\n/)
+    const cleaned = lines.filter((l) => !/^>/.test(l.trim())).join('\n').trim()
+    return cleaned || raw
+  } catch {
+    return raw
+  }
 }

@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       maximumBytesBilled: '20000000000'
     })
 
-    // レスポンスデータの整形
+    // レスポンスデータの整形（UI互換のエイリアスも同梱）
     const alerts = rows.map((row: any) => ({
       id: row.id,
       person: row.person || 'Unknown',
@@ -110,7 +110,12 @@ export async function GET(request: NextRequest) {
       isRoot: row.is_root,
       sourceFile: row.source_file,
       // 追加フィールド
-      messageId: row.message_id
+      messageId: row.message_id,
+      // 互換エイリアス（フロントの参照崩れ対策）
+      thread_id: row.thread_id,
+      subject: row.description,
+      body: row.messageBody,
+      sender: row.person,
     }))
 
     // 総件数取得（同一フィルタ適用）
@@ -137,7 +142,7 @@ export async function GET(request: NextRequest) {
     const total = parseInt(countResult[0].total)
     const totalPages = Math.ceil(total / limit)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       alerts,
       pagination: {
@@ -153,6 +158,12 @@ export async function GET(request: NextRequest) {
         results: alerts.length
       } : null
     })
+
+    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300')
+    response.headers.set('CDN-Cache-Control', 'public, max-age=300')
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=300')
+
+    return response
 
   } catch (error) {
     console.error('❌ BigQuery API Error:', {
