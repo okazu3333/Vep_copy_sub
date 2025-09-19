@@ -68,10 +68,13 @@ export async function GET(request: NextRequest) {
       ${whereClause}
     `
 
-    const [[...rows], [countRows]] = await Promise.all([
+    const [rowsResult, countResult] = await Promise.all([
       bigquery.query({ query, useLegacySql: false, maximumBytesBilled: '20000000000' }),
       bigquery.query({ query: countQuery, useLegacySql: false, maximumBytesBilled: '20000000000' })
     ])
+
+    const rows = rowsResult[0] || []
+    const countRows = countResult[0] || []
 
     const total = countRows[0]?.total || 0
     const totalPages = Math.ceil(total / limit)
