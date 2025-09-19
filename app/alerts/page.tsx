@@ -1023,6 +1023,19 @@ function AlertDetailModal({
                       )}
                     </div>
                   </div>
+                  {/* 方向別カウント */}
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {(() => {
+                      const items = modalMessages || []
+                      let outCount = 0, inCount = 0
+                      for (const msg of items) {
+                        const sender = (msg as any).from || (msg as any).sender || ''
+                        const isCompany = /@(?:ml\.)?cross-m\.co\.jp/i.test(sender)
+                        if (isCompany) outCount++; else inCount++
+                      }
+                      return `Outbound ${outCount} / Inbound ${inCount}`
+                    })()}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {/* ページネーション情報 */}
@@ -1108,17 +1121,82 @@ function AlertDetailModal({
                         if (seen.has(key)) return false
                         seen.add(key)
                         return true
+                      }).map(({ m }) => m)
+
+                      // 返信ツリー構築（in_reply_to 優先、なければ reply_level）
+                      type Node = { msg: any, children: Node[], depth: number }
+                      const idToNode = new Map<string, Node>()
+                      const roots: Node[] = []
+
+                      // ノード作成
+                      unique.forEach((m: any) => {
+                        const id = (m.message_id || m.message_key || '') as string
+                        if (!idToNode.has(id)) {
+                          idToNode.set(id, { msg: m, children: [], depth: 0 })
+                        }
                       })
+                      // 親子リンク
+                      unique.forEach((m: any, idx: number) => {
+                        const id = (m.message_id || m.message_key || '') as string
+                        const node = idToNode.get(id) as Node
+                        let parentId = (m.in_reply_to || '') as string
+                        if (parentId && idToNode.has(parentId)) {
+                          const p = idToNode.get(parentId) as Node
+                          node.depth = (p.depth || 0) + 1
+                          p.children.push(node)
+                          return
+                        }
+                        // フォールバック: reply_level
+                        const rl = typeof m.reply_level === 'number' ? m.reply_level : null
+                        if (rl !== null && rl > 0) {
+                          // 直前の低いレベルのメッセージを親候補に
+                          for (let j = idx - 1; j >= 0; j--) {
+                            const cand = unique[j]
+                            if (typeof cand.reply_level === 'number' && cand.reply_level === rl - 1) {
+                              const pid = (cand.message_id || cand.message_key || '') as string
+                              const p = idToNode.get(pid) as Node
+                              node.depth = (p.depth || 0) + 1
+                              p.children.push(node)
+                              return
+                            }
+                          }
+                        }
+                        // 親が見つからない場合はルート
+                        roots.push(node)
+                      })
+
+                      // 深さ優先で整列
+                      const ordered: Node[] = []
+                      const dfs = (n: Node) => {
+                        ordered.push(n)
+                        n.children.sort((a, b) => {
+                          const at = new Date(a.msg.created_at || a.msg.date || 0).getTime()
+                          const bt = new Date(b.msg.created_at || b.msg.date || 0).getTime()
+                          return at - bt
+                        })
+                        n.children.forEach(dfs)
+                      }
+                      // ルートは時系列で
+                      roots.sort((a, b) => {
+                        const at = new Date(a.msg.created_at || a.msg.date || 0).getTime()
+                        const bt = new Date(b.msg.created_at || b.msg.date || 0).getTime()
+                        return at - bt
+                      })
+                      roots.forEach(dfs)
                       
-                      return unique.map(({ m, key }, idx: number) => (
-                        <ThreadChatMessage
-                          key={key}
-                          message={m}
-                          isRoot={m.is_root === true}
-                          isOpen={openMessages.has(key)}
-                          onToggle={() => toggleMessage(key)}
-                        />
-                      ))
+                      return ordered.map(({ msg, depth }, idx: number) => {
+                        const key = (msg.message_id || msg.message_key || `tree-${idx}`) as string
+                        return (
+                          <div key={key} style={{ marginLeft: Math.min(depth, 10) * 16 }}>
+                            <ThreadChatMessage
+                              message={msg}
+                              isRoot={msg.is_root === true}
+                              isOpen={openMessages.has(key)}
+                              onToggle={() => toggleMessage(key)}
+                            />
+                          </div>
+                        )
+                      })
                     })()}
                   </div>
                 </CardContent>
