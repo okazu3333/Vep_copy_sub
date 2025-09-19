@@ -128,7 +128,7 @@ function AlertDetailModal({
         const threadId = alert?.thread_id
         if (!threadId) return
         const resp = await fetch(`/api/alerts-threaded/messages?thread_id=${encodeURIComponent(threadId)}`, {
-          headers: { 'Authorization': `Basic ${btoa('admin-user:your-secure-password')}` }
+          headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` }
         })
         if (resp.ok) {
           const data = await resp.json()
@@ -1083,7 +1083,7 @@ export default function AlertsPage() {
     const qpAssignee = searchParams.get('assignee')
     if (qpAssignee === 'me') {
       // 現状ユーザー識別はBasic認証のユーザー名を仮利用
-      const currentUser = 'admin-user'
+      const currentUser = 'cmgadmin'
       setFilters(prev => ({ ...prev, assignee: currentUser }))
     }
     const qpStatus = searchParams.get('status')
@@ -1181,7 +1181,7 @@ export default function AlertsPage() {
       })
       
       if (filters.status) params.append('status', filters.status)
-      if (filters.assignee) params.append('assignee', filters.assignee === 'admin-user' ? 'me' : filters.assignee)
+      if (filters.assignee) params.append('assignee', filters.assignee === 'cmgadmin' ? 'me' : filters.assignee)
       if (activeSearchTerm && activeSearchTerm.trim() !== '') {
         params.append('search', activeSearchTerm.trim())
       }
@@ -1191,7 +1191,7 @@ export default function AlertsPage() {
       
       const response = await fetch(`${apiEndpoint}?${params}`, {
         headers: {
-          'Authorization': `Basic ${btoa('admin-user:your-secure-password')}`
+          'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}`
         }
       })
       
