@@ -47,7 +47,7 @@ import {
   Rows,
   LayoutGrid,
 } from 'lucide-react'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
@@ -1043,7 +1043,7 @@ function AlertDetailModal({
   )
 }
 
-export default function AlertsPage() {
+function AlertsPageInner() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -2217,5 +2217,13 @@ export default function AlertsPage() {
         onStatusChange={handleStatusChange}
       />
     </div>
+  )
+}
+
+export default function AlertsPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8">読み込み中...</div>}>
+      <AlertsPageInner />
+    </Suspense>
   )
 }
