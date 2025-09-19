@@ -1,0 +1,18 @@
+# Build artifacts
+.next/
+.DS_Store
+node_modules/
+.df-venv/
+venv/
+.env.local
+
+# Large artifacts
+*.mbox
+*.mbox.zip
+*.pst
+*.csv
+*.xml
+sample_quality_check/**
+stage3_processing_results_*
+*.ndjson
+*.json.gz
