@@ -152,152 +152,246 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const level = searchParams.get('level') || ''
+    const start = searchParams.get('start') || ''
+    const end = searchParams.get('end') || ''
+    const includeMessagesParam = (searchParams.get('include_messages') || 'false').toLowerCase()
+    const includeMessages = includeMessagesParam !== 'false' && includeMessagesParam !== '0'
     
     const offset = (page - 1) * limit
 
-    // 検索条件の構築
+    // 検索条件の構築（フルクエリ: threaded view 用）
     let whereClause = '1=1'
     const params: any[] = []
     
-    // 文字化けデータ、配信管理システム関連メール、各種自動メールアドレスを除外
+    // 軽量クエリ: scored テーブル用の別 where/params
+    let whereClauseScored = '1=1'
+    const paramsScored: any[] = []
+    
+    // 文字化け・自動メール除外は threaded view 側にのみ適用
     whereClause += ` AND (
-      body NOT LIKE '$B%' AND
-      body NOT LIKE '%$B%' AND
-      body NOT LIKE '%以下のとおり配信依頼送信完了しました%' AND
+      body_preview NOT LIKE '$B%' AND
+      body_preview NOT LIKE '%$B%' AND
+      body_preview NOT LIKE '%以下のとおり配信依頼送信完了しました%' AND
       subject NOT LIKE '%配信管理システム配信完了報告%' AND
-      \`from\` NOT LIKE '%info@%' AND
-      \`from\` NOT LIKE '%noreply@%' AND
-      \`from\` NOT LIKE '%support@%' AND
-      \`from\` NOT LIKE '%magazine@%'
+      from_email NOT LIKE '%info@%' AND
+      from_email NOT LIKE '%noreply@%' AND
+      from_email NOT LIKE '%support@%' AND
+      from_email NOT LIKE '%magazine@%'
     )`
-    
+
     if (search) {
-      whereClause += ' AND (LOWER(subject) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?) OR LOWER(\`from\`) LIKE LOWER(?) OR CAST(alert_id AS STRING) = ?)'
+      // threaded view
+      whereClause += ' AND (LOWER(subject) LIKE LOWER(?) OR LOWER(body_preview) LIKE LOWER(?) OR LOWER(from_email) LIKE LOWER(?))'
       const searchTerm = `%${search}%`
-      params.push(searchTerm, searchTerm, searchTerm, search)
+      params.push(searchTerm, searchTerm, searchTerm)
+      // scored table
+      whereClauseScored += ' AND (LOWER(description) LIKE LOWER(?) OR LOWER(messageBody) LIKE LOWER(?) OR LOWER(person) LIKE LOWER(?))'
+      paramsScored.push(searchTerm, searchTerm, searchTerm)
+    }
+
+    if (start) {
+      // threaded view uses `date` TIMESTAMP
+      whereClause += ' AND date >= TIMESTAMP(?)'
+      params.push(start)
+      // scored table uses `datetime` TIMESTAMP
+      whereClauseScored += ' AND datetime >= TIMESTAMP(?)'
+      paramsScored.push(start)
+    }
+
+    if (end) {
+      whereClause += ' AND date < TIMESTAMP(?)'
+      params.push(end)
+      whereClauseScored += ' AND datetime < TIMESTAMP(?)'
+      paramsScored.push(end)
     }
     
-    if (status && status !== 'all') {
-      whereClause += ' AND status = ?'
-      params.push(status)
-    }
+    // status/level は後段のエンリッチ結果でフィルタする
     
-    if (level && level !== 'all') {
-      whereClause += ' AND priority = ?'
-      params.push(level)
-    }
-    
-    // スレッドごとにグループ化されたアラートを取得
-    const query = `
-      WITH ThreadedAlerts AS (
+    // クエリ本体（軽量モードと通常モードを切替）
+    const slimQuery = `
+      WITH Candidates AS (
         SELECT
           thread_id,
-          MIN(date) as thread_start_time,
-          MAX(date) as thread_last_activity,
-          COUNT(*) as message_count,
-          COALESCE(
-            MAX(CASE WHEN is_root = true THEN alert_id END),
-            MAX(alert_id)
-          ) as alert_id,
-          COALESCE(
-            MAX(CASE WHEN is_root = true THEN message_id END),
-            MIN(message_id)
-          ) as root_message_id,
-          COALESCE(
-            MAX(CASE WHEN is_root = true THEN subject END),
-            MAX(CASE WHEN subject IS NOT NULL AND subject != '' THEN subject END),
-            '件名なし'
-          ) as root_subject,
-          COALESCE(
-            MAX(CASE WHEN is_root = true THEN \`from\` END),
-            MAX(CASE WHEN \`from\` IS NOT NULL AND \`from\` != '' THEN \`from\` END),
-            '送信者不明'
-          ) as root_from,
-          COALESCE(
-            MAX(CASE WHEN is_root = true THEN body END),
-            MAX(CASE WHEN body IS NOT NULL AND body != '' THEN body END)
-          ) as root_body,
-          COALESCE(
-            MAX(CASE WHEN \`to\` NOT LIKE '%@cross-m.co.jp%' THEN \`to\` END),
-            'customer@example.com'
-          ) as customer_email
-        FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\`
+          MAX(datetime) AS thread_last_activity
+        FROM \`viewpers.salesguard_alerts.alerts_v2_scored\`
+        WHERE ${whereClauseScored} AND thread_id IS NOT NULL
+        GROUP BY thread_id
+      ),
+      TopThreads AS (
+        SELECT thread_id, thread_last_activity
+        FROM Candidates
+        ORDER BY thread_last_activity DESC
+        LIMIT ${limit} OFFSET ${offset}
+      ),
+      Threaded AS (
+        SELECT
+          s.thread_id,
+          MIN(s.datetime) AS thread_start_time,
+          MAX(s.datetime) AS thread_last_activity,
+          COUNT(*) AS message_count,
+          ANY_VALUE(s.id) AS any_id,
+          ANY_VALUE(s.message_id) AS any_message_id,
+          ANY_VALUE(s.status) AS any_status,
+          ANY_VALUE(CASE s.level WHEN 'high' THEN '高' WHEN 'medium' THEN '中' ELSE '低' END) AS any_priority,
+          ANY_VALUE(s.score) AS any_score,
+          ANY_VALUE(s.keyword) AS any_keyword,
+          ANY_VALUE(s.department) AS any_department,
+          ANY_VALUE(s.customer_email) AS any_customer_email,
+          ANY_VALUE(s.person) AS any_person,
+          ANY_VALUE(s.description) AS any_subject,
+          ANY_VALUE(s.messageBody) AS any_body,
+          ANY_VALUE(s.source_file) AS any_source_file
+        FROM \`viewpers.salesguard_alerts.alerts_v2_scored\` s
+        JOIN TopThreads t USING (thread_id)
+        GROUP BY s.thread_id
+      )
+      SELECT
+        ROW_NUMBER() OVER() AS id,
+        thread_id,
+        any_message_id AS message_id,
+        any_status AS status,
+        any_priority AS priority,
+        any_score AS score,
+        any_keyword AS keyword,
+        any_department AS department,
+        any_customer_email AS customer_email,
+        any_person AS sender,
+        thread_last_activity AS date,
+        any_subject AS subject,
+        any_body AS body,
+        any_source_file AS source_file,
+        message_count,
+        thread_start_time,
+        thread_last_activity,
+        thread_start_time AS created_at,
+        thread_last_activity AS updated_at
+      FROM Threaded
+      ORDER BY thread_last_activity DESC
+    `
+
+    const fullQuery = `
+      WITH Candidates AS (
+        SELECT
+          thread_id,
+          MAX(date) AS thread_last_activity
+        FROM \`viewpers.salesguard_alerts.email_messages_threaded_v1\`
         WHERE ${whereClause}
         GROUP BY thread_id
-        HAVING thread_id IS NOT NULL
+      ),
+      TopThreads AS (
+        SELECT thread_id, thread_last_activity
+        FROM Candidates
+        ORDER BY thread_last_activity DESC
+        LIMIT ${limit} OFFSET ${offset}
+      ),
+      Threaded AS (
+        SELECT
+          m.thread_id,
+          MIN(m.date) AS thread_start_time,
+          MAX(m.date) AS thread_last_activity,
+          COUNT(*) AS message_count,
+          MAX(IF(m.is_root, m.message_id, NULL)) AS root_message_id,
+          COALESCE(
+            MAX(IF(m.is_root AND m.subject IS NOT NULL AND m.subject != '', m.subject, NULL)),
+            MAX(IF(m.subject IS NOT NULL AND m.subject != '', m.subject, NULL)),
+            '件名なし'
+          ) AS root_subject,
+          COALESCE(
+            MAX(IF(m.is_root AND m.body_preview IS NOT NULL AND m.body_preview != '', m.body_preview, NULL)),
+            MAX(IF(m.body_preview IS NOT NULL AND m.body_preview != '', m.body_preview, NULL)),
+            '本文なし'
+          ) AS root_body,
+          ANY_VALUE(m.from_email) AS customer_email
+        FROM \`viewpers.salesguard_alerts.email_messages_threaded_v1\` m
+        JOIN TopThreads t USING (thread_id)
+        GROUP BY m.thread_id
       ),
       ThreadMessages AS (
-        SELECT 
-          ta.*,
-          ARRAY_AGG(
-            STRUCT(
-              a.message_id,
-              COALESCE(a.subject, '件名なし') as message_subject,
-              COALESCE(a.\`from\`, '送信者不明') as \`from\`,
-              COALESCE(a.\`to\`, '宛先不明') as \`to\`,
-              COALESCE(a.body, '本文なし') as body,
-              a.date,
-              a.reply_level,
-              a.is_root,
-              a.source_file
-            ) ORDER BY a.reply_level ASC, a.date ASC
-          ) as messages
-        FROM ThreadedAlerts ta
-        LEFT JOIN \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\` a ON ta.thread_id = a.thread_id
-        GROUP BY ta.thread_id, ta.thread_start_time, ta.thread_last_activity, ta.message_count, 
-                 ta.alert_id, ta.root_message_id, ta.root_subject, ta.root_from, ta.root_body, ta.customer_email
+        SELECT
+          t.thread_id,
+          t.thread_start_time,
+          t.thread_last_activity,
+          t.message_count,
+          t.root_message_id,
+          t.root_subject,
+          t.root_body,
+          t.customer_email,
+          ARRAY_AGG(STRUCT(
+            m.message_id AS message_id,
+            m.subject AS subject,
+            m.from_email AS sender,
+            ARRAY_TO_STRING(m.to_emails, ', ') AS recipient,
+            m.body_preview AS body,
+            m.date AS date,
+            m.reply_level AS reply_level,
+            m.is_root AS is_root,
+            m.body_gcs_uri AS source_file
+          ) ORDER BY m.reply_level ASC, m.date ASC) AS messages
+        FROM Threaded t
+        JOIN \`viewpers.salesguard_alerts.email_messages_threaded_v1\` m USING (thread_id)
+        GROUP BY t.thread_id, t.thread_start_time, t.thread_last_activity, t.message_count,
+                 t.root_message_id, t.root_subject, t.root_body, t.customer_email
       )
       SELECT 
         thread_id,
-        CONCAT('ALT-', CAST(alert_id AS STRING)) as id,
-        COALESCE(root_subject, '件名なし') as subject,
-        root_from as sender,
-        'キーワード未設定' as keyword,
-        '中' as priority,
-        '新規' as status,
-        50 as score,
-        '営業部' as department,
+        COALESCE(root_message_id, (SELECT m.message_id FROM UNNEST(messages) AS m LIMIT 1)) AS id,
+        COALESCE(root_subject, '件名なし') AS subject,
+        (SELECT m.sender FROM UNNEST(messages) AS m LIMIT 1) AS sender,
+        'キーワード未設定' AS keyword,
+        '中' AS priority,
+        '新規' AS status,
+        50 AS score,
+        '営業部' AS department,
         customer_email,
-        thread_start_time as created_at,
-        thread_last_activity as updated_at,
+        thread_start_time AS created_at,
+        thread_last_activity AS updated_at,
         message_count,
-        COALESCE(root_body, '本文なし') as body,
+        COALESCE(root_body, '本文なし') AS body,
         messages
       FROM ThreadMessages tm
       ORDER BY thread_last_activity DESC
-      LIMIT ${limit} OFFSET ${offset}
     `
 
-    // 総件数を取得
+    const query = includeMessages ? fullQuery : slimQuery
+
+    // 総件数を取得（alerts_v2_scored ベースに合わせる）
     const countQuery = `
-      SELECT COUNT(DISTINCT thread_id) as total
-      FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\`
-      WHERE ${whereClause} AND thread_id IS NOT NULL
+      SELECT COUNT(DISTINCT thread_id) AS total
+      FROM \`viewpers.salesguard_alerts.alerts_v2_scored\`
+      WHERE ${whereClauseScored} AND thread_id IS NOT NULL
     `
 
     const [results, countResults] = await Promise.all([
       bigquery.query({
         query,
-        params,
+        params: includeMessages ? params : paramsScored,
         useLegacySql: false,
-        maximumBytesBilled: '1000000000'
+        maximumBytesBilled: '20000000000'
       }),
       bigquery.query({
         query: countQuery,
-        params,
+        params: paramsScored,
         useLegacySql: false,
-        maximumBytesBilled: '1000000000'
+        maximumBytesBilled: '20000000000'
       })
     ])
 
-    const alerts = results[0] || []
+    let alerts = results[0] || []
     const total = countResults[0]?.[0]?.total || 0
     const totalPages = Math.ceil(total / limit)
 
-    // 各アラートに感情分析とマッピング結果を追加
+    if (!includeMessages) {
+      alerts = alerts.map((a: any) => ({ ...a, messages: [] }))
+    }
+
     const enrichedAlerts = await enrichAlertsWithSentimentMapping(alerts)
 
-    // レスポンスヘッダーにキャッシュ設定を追加
+    const filteredAlerts = enrichedAlerts.filter((a: any) => {
+      const statusOk = !status || status === 'all' || a.status === status
+      const levelOk = !level || level === 'all' || a.priority === level
+      return statusOk && levelOk
+    })
+
     const headers = {
       'Cache-Control': 'public, max-age=300, s-maxage=300',
       'CDN-Cache-Control': 'public, max-age=300',
@@ -306,7 +400,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      alerts: enrichedAlerts,
+      alerts: filteredAlerts,
       pagination: {
         page,
         limit,
@@ -316,7 +410,7 @@ export async function GET(request: NextRequest) {
         hasNext: page < totalPages,
         hasPrev: page > 1
       },
-      searchInfo: search ? { searchTerm: search, resultsCount: enrichedAlerts.length, totalResults: total } : null
+      searchInfo: search ? { searchTerm: search, resultsCount: filteredAlerts.length, totalResults: total } : null
     }, { headers })
 
   } catch (error) {

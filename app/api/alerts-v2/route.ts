@@ -3,114 +3,85 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery({ projectId: 'viewpers' })
 
+// App-side lightweight rules
+const RULES: Array<{ kw: string; weight: number }> = [
+  { kw: 'クレーム', weight: 1.0 },
+  { kw: '苦情', weight: 1.0 },
+  { kw: '不満', weight: 1.0 },
+  { kw: '緊急', weight: 1.5 },
+  { kw: '至急', weight: 1.5 },
+  { kw: '急ぎ', weight: 1.5 },
+  { kw: 'キャンセル', weight: 1.2 },
+  { kw: '解約', weight: 1.2 },
+  { kw: '高い', weight: 0.8 },
+  { kw: '料金', weight: 0.8 },
+  { kw: '価格', weight: 0.8 },
+  { kw: '不良', weight: 1.3 },
+  { kw: '不具合', weight: 1.3 },
+  { kw: '故障', weight: 1.3 },
+  { kw: 'まだですか', weight: 1.1 },
+  { kw: '対応して', weight: 1.1 },
+  { kw: '返事がない', weight: 1.1 },
+]
+
+function computeScoreAndKeywords(text: string) {
+  let score = 0
+  const hits: string[] = []
+  for (const { kw, weight } of RULES) {
+    if (text.includes(kw)) {
+      score += weight
+      hits.push(kw)
+    }
+  }
+  return { score, keyword: hits.join(', ') }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || ''
-    const priority = searchParams.get('priority') || ''
-    const department = searchParams.get('department') || ''
-    
+    const priority = (searchParams.get('priority') || '').toLowerCase()
+
     const offset = (page - 1) * limit
-    
-    // WHERE句の構築
-    let whereConditions = ['1=1']
-    let queryParams: any[] = []
-    
-    if (search) {
-      whereConditions.push(`(LOWER(sender) LIKE LOWER(@search) OR LOWER(subject) LIKE LOWER(@search) OR LOWER(body) LIKE LOWER(@search))`)
-      queryParams.push({ name: 'search', value: `%${search}%` })
-    }
-    
-    if (status && status !== 'all') {
-      whereConditions.push(`status = @status`)
-      queryParams.push({ name: 'status', value: status })
-    }
-    
-    if (priority && priority !== 'all') {
-      whereConditions.push(`priority = @priority`)
-      queryParams.push({ name: 'priority', value: priority })
-    }
-    
-    if (department && department !== 'all') {
-      whereConditions.push(`department = @department`)
-      queryParams.push({ name: 'department', value: department })
-    }
-    
-    const whereClause = whereConditions.join(' AND ')
-    
-    // メインクエリ
+
+    // Optional server-side filter by priority level
+    const whereClause = priority === 'high' || priority === 'medium' || priority === 'low'
+      ? `WHERE level = '${priority}'`
+      : ''
+
+    // Read directly from the pre-scored BigQuery table
     const query = `
       SELECT
-        alert_id as id,
-        original_alert_id,
-        message_id,
-        status,
-        priority as level,
-        score,
-        detected_keyword as keyword,
-        department,
-        assigned_user_id,
-        customer_email,
-        created_at as datetime,
-        updated_at,
-        resolved_at,
-        resolved_by,
-        resolution_note,
-        sender as person,
-        subject as description,
-        body as messageBody,
-        source_file,
-        thread_id,
-        reply_level,
-        is_root
-      FROM \`viewpers.salesguard_alerts.alerts_v2\`
-      WHERE ${whereClause}
-      ORDER BY created_at DESC
+        id, original_alert_id, message_id, status, level, score, keyword,
+        department, assigned_user_id, customer_email, datetime, updated_at,
+        resolved_at, resolved_by, resolution_note, person, description, messageBody,
+        source_file, thread_id, reply_level, is_root
+      FROM \`viewpers.salesguard_alerts.alerts_v2_scored\`
+      ${whereClause}
+      ORDER BY datetime DESC
       LIMIT ${limit} OFFSET ${offset}
     `
-    
-    // 総件数クエリ
+
     const countQuery = `
-      SELECT COUNT(*) as total
-      FROM \`viewpers.salesguard_alerts.alerts_v2\`
-      WHERE ${whereClause}
+      SELECT COUNT(*) AS total FROM \`viewpers.salesguard_alerts.alerts_v2_scored\`
+      ${whereClause}
     `
-    
-    // クエリ実行
-    const [rows] = await bigquery.query({
-      query,
-      params: queryParams,
-      useLegacySql: false,
-      maximumBytesBilled: '1000000000' // 1GB
-    })
-    
-    const [countRows] = await bigquery.query({
-      query: countQuery,
-      params: queryParams,
-      useLegacySql: false,
-      maximumBytesBilled: '1000000000'
-    })
-    
+
+    const [rowsResult, countResult] = await Promise.all([
+      bigquery.query({ query, useLegacySql: false, maximumBytesBilled: '20000000000' }),
+      bigquery.query({ query: countQuery, useLegacySql: false, maximumBytesBilled: '20000000000' })
+    ])
+
+    const rows = rowsResult[0] || []
+    const countRows = countResult[0] || []
+
     const total = countRows[0]?.total || 0
     const totalPages = Math.ceil(total / limit)
-    
-    // レスポンスデータの構築
-    const alerts = rows.map((row: any) => ({
-      ...row,
-      // 日付フォーマットの統一
-      datetime: row.datetime ? new Date(row.datetime.value || row.datetime).toISOString() : null,
-      // レベルの正規化
-      level: row.level?.toLowerCase() || 'medium',
-      // ステータスの日本語化
-      status: row.status || 'pending'
-    }))
-    
+
     return NextResponse.json({
       success: true,
-      alerts,
+      alerts: rows,
       pagination: {
         page,
         limit,
@@ -118,28 +89,22 @@ export async function GET(request: NextRequest) {
         total,
         totalPages,
         hasNext: page < totalPages,
-        hasPrev: page > 1
+        hasPrev: page > 1,
       },
-      searchInfo: search ? {
-        searchTerm: search,
-        resultsCount: alerts.length,
-        totalResults: total
-      } : null
+      searchInfo: null,
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=300, s-maxage=300',
+        'Cache-Control': 'public, max-age=120, s-maxage=120',
         'ETag': `"${Date.now()}"`,
         'Last-Modified': new Date().toUTCString(),
-        'X-Query-Time': Date.now().toString()
       }
     })
-    
   } catch (error: any) {
     console.error('Error fetching alerts:', error)
     return NextResponse.json({
       success: false,
       message: error.message || 'アラートの取得に失敗しました',
-      error: error.message
+      error: error.message,
     }, { status: 500 })
   }
 } 

@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || ''
     const level = searchParams.get('level') || ''
     const priority = searchParams.get('priority') || ''
+    const start = searchParams.get('start') || ''
+    const end = searchParams.get('end') || ''
 
     const offset = (page - 1) * limit
 
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
         a.detected_keyword as keyword,
         a.department,
         a.customer_email,
-        a.date as datetime,
+        a.datetime as datetime,
         -- メール情報も取得
         a.\`from\` as person,
         a.subject as description,
@@ -38,48 +40,55 @@ export async function GET(request: NextRequest) {
         a.reply_level,
         a.is_root,
         a.source_file
-      FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\` a
+      FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\` a
       WHERE 1=1
     `
 
-    const queryParams: any[] = []
-    let paramIndex = 0
+    const params: Record<string, any> = {}
 
     // 検索条件の追加
     if (search) {
       query += ` AND (
-        a.\`from\` LIKE @param${paramIndex} OR
-        a.subject LIKE @param${paramIndex} OR
-        a.body LIKE @param${paramIndex} OR
-        a.customer_email LIKE @param${paramIndex}
+        a.\`from\` LIKE @search OR
+        a.subject LIKE @search OR
+        a.body LIKE @search OR
+        a.customer_email LIKE @search
       )`
-      queryParams.push({ name: `param${paramIndex}`, value: `%${search}%` })
-      paramIndex++
+      params.search = `%${search}%`
     }
 
     if (status) {
-      query += ` AND a.status = @param${paramIndex}`
-      queryParams.push({ name: `param${paramIndex}`, value: status })
-      paramIndex++
+      query += ` AND a.status = @status`
+      params.status = status
     }
 
     if (level) {
-      query += ` AND a.priority = @param${paramIndex}`
-      queryParams.push({ name: `param${paramIndex}`, value: level })
-      paramIndex++
+      query += ` AND a.priority = @level`
+      params.level = level
     }
 
     if (priority) {
-      query += ` AND a.priority = @param${paramIndex}`
-      queryParams.push({ name: `param${paramIndex}`, value: priority })
-      paramIndex++
+      query += ` AND a.priority = @priority`
+      params.priority = priority
     }
 
-    query += ` ORDER BY a.date DESC LIMIT ${limit} OFFSET ${offset}`
+    if (start) {
+      query += ` AND a.datetime >= TIMESTAMP(@start)`
+      params.start = start
+    }
+
+    if (end) {
+      query += ` AND a.datetime < TIMESTAMP(@end)`
+      params.end = end
+    }
+
+    query += ` ORDER BY a.datetime DESC LIMIT ${limit} OFFSET ${offset}`
 
     const [rows] = await bigquery.query({ 
       query,
-      params: queryParams
+      params,
+      useLegacySql: false,
+      maximumBytesBilled: '20000000000'
     })
 
     // レスポンスデータの整形
@@ -104,23 +113,27 @@ export async function GET(request: NextRequest) {
       messageId: row.message_id
     }))
 
-    // 総件数取得
-    const countQuery = `
+    // 総件数取得（同一フィルタ適用）
+    let countQuery = `
       SELECT COUNT(*) as total
-      FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\` a
+      FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\` a
       WHERE 1=1
-      ${search ? `AND (
-        a.\`from\` LIKE '%${search}%' OR
-        a.subject LIKE '%${search}%' OR
-        a.body LIKE '%${search}%' OR
-        a.customer_email LIKE '%${search}%'
-      )` : ''}
-      ${status ? `AND a.status = '${status}'` : ''}
-      ${level ? `AND a.priority = '${level}'` : ''}
-      ${priority ? `AND a.priority = '${priority}'` : ''}
     `
+    if (search) {
+      countQuery += ` AND (
+        a.\`from\` LIKE @search OR
+        a.subject LIKE @search OR
+        a.body LIKE @search OR
+        a.customer_email LIKE @search
+      )`
+    }
+    if (status) countQuery += ` AND a.status = @status`
+    if (level) countQuery += ` AND a.priority = @level`
+    if (priority) countQuery += ` AND a.priority = @priority`
+    if (start) countQuery += ` AND a.datetime >= TIMESTAMP(@start)`
+    if (end) countQuery += ` AND a.datetime < TIMESTAMP(@end)`
 
-    const [countResult] = await bigquery.query({ query: countQuery })
+    const [countResult] = await bigquery.query({ query: countQuery, params, useLegacySql: false, maximumBytesBilled: '20000000000' })
     const total = parseInt(countResult[0].total)
     const totalPages = Math.ceil(total / limit)
 

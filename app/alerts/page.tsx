@@ -43,8 +43,12 @@ import {
   Filter,
   SkipForward,
   SkipBack,
+  List,
+  Rows,
+  LayoutGrid,
 } from 'lucide-react'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 
@@ -101,16 +105,43 @@ function AlertDetailModal({
   const [status, setStatus] = useState(alert?.status || 'pending')
   // メッセージの開閉状態を管理
   const [openMessages, setOpenMessages] = useState<Set<string>>(new Set())
+  // 追加: モーダル内でメッセージをオンデマンド取得
+  const [modalMessages, setModalMessages] = useState<any[]>(alert?.messages || [])
 
   // メッセージページネーション用のstate
   const [messageCurrentPage, setMessageCurrentPage] = useState(1)
   const [messagePageSize, setMessagePageSize] = useState(20)
 
-  // アラートが変更された際にページネーションをリセット
+  // アラートが変更された際にページネーションとメッセージをリセット
   useEffect(() => {
     setMessageCurrentPage(1)
     setOpenMessages(new Set())
+    setModalMessages(alert?.messages || [])
   }, [alert?.id])
+
+  // モーダル表示時、messagesが空ならスレッドメッセージを取得
+  useEffect(() => {
+    const fetchThreadMessages = async () => {
+      try {
+        if (!isOpen) return
+        if (modalMessages && modalMessages.length > 0) return
+        const threadId = alert?.thread_id
+        if (!threadId) return
+        const resp = await fetch(`/api/alerts-threaded/messages?thread_id=${encodeURIComponent(threadId)}`, {
+          headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` }
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data?.success) {
+            setModalMessages(Array.isArray(data.messages) ? data.messages : [])
+          }
+        }
+      } catch (e) {
+        console.error('スレッドメッセージ取得エラー:', e)
+      }
+    }
+    fetchThreadMessages()
+  }, [isOpen, alert?.thread_id])
 
   // メッセージの開閉状態を切り替える
   const toggleMessage = (messageId: string) => {
@@ -127,8 +158,8 @@ function AlertDetailModal({
 
   // すべてのメッセージを開く
   const openAllMessages = () => {
-    if (alert?.messages) {
-      const allMessageIds = alert.messages.map((msg: any) => 
+    if (modalMessages) {
+      const allMessageIds = modalMessages.map((msg: any) => 
         msg.message_id || msg.alert_id || `msg-${Date.now()}`
       )
       setOpenMessages(new Set(allMessageIds))
@@ -452,8 +483,8 @@ function AlertDetailModal({
                           }
                           
                           // 2. senderがない場合は、メッセージ配列から自社ドメインを抽出
-                          if (alert?.messages && alert.messages.length > 0) {
-                            const rootMessage = alert.messages.find((m: any) => m.is_root === true) || alert.messages[0]
+                          if (modalMessages && modalMessages.length > 0) {
+                            const rootMessage = modalMessages.find((m: any) => m.is_root === true) || modalMessages[0]
                             if (rootMessage?.from) {
                               const angleMatch = rootMessage.from.match(/<([^>]+@cross-m\.co\.jp)>/i)
                               if (angleMatch) {
@@ -486,9 +517,9 @@ function AlertDetailModal({
                           }
                           
                           // 2. customer_emailがない場合やデフォルト値の場合は、メッセージ配列から抽出
-                          if (alert?.messages && alert.messages.length > 0) {
+                          if (modalMessages && modalMessages.length > 0) {
                             // ルートメッセージのTo情報を取得
-                            const rootMessage = alert.messages.find((m: any) => m.is_root === true) || alert.messages[0]
+                            const rootMessage = modalMessages.find((m: any) => m.is_root === true) || modalMessages[0]
                             if (rootMessage?.to) {
                               // 自社ドメイン以外のTo情報を優先
                               const nonCompanyMatch = rootMessage.to.match(/<([^>]+@(?!cross-m\.co\.jp)[^>]+)>/i)
@@ -557,9 +588,9 @@ function AlertDetailModal({
                         <div className="text-muted-foreground mt-1 break-words">
                           {(() => {
                             // 1. まずメッセージ配列からCC情報を抽出
-                            if (alert?.messages && alert.messages.length > 0) {
+                            if (modalMessages && modalMessages.length > 0) {
                               // ルートメッセージからCC情報を抽出
-                              const rootMessage = alert.messages.find((m: any) => m.is_root === true) || alert.messages[0]
+                              const rootMessage = modalMessages.find((m: any) => m.is_root === true) || modalMessages[0]
                               if (rootMessage?.body) {
                                 const extractCCInfo = (body: string) => {
                                   if (!body) return 'なし'
@@ -859,7 +890,7 @@ function AlertDetailModal({
             className="overflow-y-auto max-h-[calc(98vh-250px)]"
           >
             {/* メッセージ履歴 */}
-            {alert?.messages && alert.messages.length > 0 && (
+            {modalMessages && modalMessages.length > 0 && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -894,7 +925,7 @@ function AlertDetailModal({
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
                     <span>
                       全{(() => {
-                        const uniqueMessages = alert.messages.reduce((acc: any[], message: any) => {
+                        const uniqueMessages = modalMessages.reduce((acc: any[], message: any) => {
                           const messageId = message.message_id || message.alert_id
                           const exists = acc.find(m => (m.message_id || m.alert_id) === messageId)
                           if (!exists) {
@@ -927,7 +958,7 @@ function AlertDetailModal({
                   <div className="space-y-4 max-h-96 overflow-y-auto">
                     {(() => {
                       // 重複メッセージを除去（message_idで重複チェック）
-                      const uniqueMessages = alert.messages.reduce((acc: any[], message: any) => {
+                      const uniqueMessages = modalMessages.reduce((acc: any[], message: any) => {
                         const messageId = message.message_id || message.alert_id
                         const exists = acc.find(m => (m.message_id || m.alert_id) === messageId)
                         if (!exists) {
@@ -967,288 +998,44 @@ function AlertDetailModal({
                             }
                           }
                         }
-                        // 通常のメールの場合
-                        else {
-                          // 1. 送信者（from）が自社ドメインの場合 - 自社からの送信
-                          if (sender.includes('@cross-m.co.jp')) {
+                        
+                        // 直接ドメイン判定
+                        if (!isFromCompany) {
+                          if (sender.match(/@cross-m\.co\.jp/i)) {
                             isFromCompany = true
-                          }
-                          // 2. 宛先（to）が自社ドメインの場合 - 顧客からの受信
-                          else if (to.includes('@cross-m.co.jp')) {
-                            isFromCompany = false
-                          }
-                          // 3. その他の場合は、メッセージの内容や件名から判断
-                          else {
-                            // 件名に「Re:」が含まれている場合は、通常クライアントからの返信
-                            if (message.subject && message.subject.startsWith('Re:')) {
-                              isFromCompany = false
-                            }
-                            // ルートメッセージでない場合は、通常クライアントからの返信
-                            else if (!message.is_root) {
-                              isFromCompany = false
-                            }
-                            // デフォルトはクライアント
-                            else {
-                              isFromCompany = false
-                            }
                           }
                         }
                         
                         return {
                           ...message,
-                          isFromCompany,
-                          messageType: isFromCompany ? '送信' : '受信'
+                          isFromCompany
                         }
                       })
                       
-                      // 日時順にソート
-                      const sortedMessages = categorizedMessages.sort((a: any, b: any) => {
-                        const dateA = new Date(a.created_at?.value || a.created_at || 0)
-                        const dateB = new Date(b.created_at?.value || b.created_at || 0)
-                        return dateA.getTime() - dateB.getTime()
-                      })
-                      
-                      // ページネーション処理
-                      const totalMessages = sortedMessages.length
-                      const totalPages = Math.ceil(totalMessages / messagePageSize)
-                      const startIndex = (messageCurrentPage - 1) * messagePageSize
-                      const endIndex = startIndex + messagePageSize
-                      const currentPageMessages = sortedMessages.slice(startIndex, endIndex)
-                      
-                      return (
-                        <>
-                          {/* メッセージ表示 */}
-                          {currentPageMessages.map((message: any, index: number) => {
-                            // より確実に一意のIDを生成
-                            const messageId = message.message_id || message.alert_id || `msg-${startIndex + index}`
-                            // インデックスとthread_idを組み合わせて一意性を保証
-                            const uniqueKey = `${alert.thread_id}-${startIndex + index}-${messageId}`
-                            const isOpen = openMessages.has(messageId)
-                            
-                            return (
-                              <div key={uniqueKey} className={`flex ${message.isFromCompany ? 'justify-end' : 'justify-start'}`}>
-                                {/* クライアントメッセージ（左側） */}
-                                {!message.isFromCompany && (
-                                  <div className="flex items-start gap-2 max-w-[70%]">
-                                    {/* アバター */}
-                                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                      {(() => {
-                                        const sender = message.from || message.sender || ''
-                                        const emailMatch = sender.match(/<([^>]+)>/)
-                                        if (emailMatch) {
-                                          return emailMatch[1].charAt(0).toUpperCase()
-                                        }
-                                        return sender.charAt(0).toUpperCase()
-                                      })()}
-                                    </div>
-                                    
-                                    {/* メッセージバブル */}
-                                    <div className="bg-green-100 border border-green-200 rounded-lg p-3 min-w-0">
-                                      {/* メッセージヘッダー */}
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xs font-medium text-green-800">
-                                          {(() => {
-                                            const sender = message.from || message.sender || ''
-                                            const emailMatch = sender.match(/<([^>]+)>/)
-                                            if (emailMatch) {
-                                              return emailMatch[1]
-                                            }
-                                            return sender
-                                          })()}
-                                        </span>
-                                        <Badge variant="secondary" className="text-xs bg-green-200 text-green-800">
-                                          受信
-                                        </Badge>
-                                        {message.is_root && (
-                                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                                            ルート
-                                          </span>
-                                        )}
-                                        {/* 転送サービス経由の場合の表示 */}
-                                        {(message.from?.includes('via') || message.from?.includes('Via')) && (
-                                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                            転送経由
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      {/* 件名 */}
-                                      {message.message_subject && (
-                                        <div className="text-sm font-medium text-gray-900 mb-2">
-                                          {message.message_subject}
-                                        </div>
-                                      )}
-                                      
-                                      {/* メッセージ内容 */}
-                                      <div 
-                                        className="cursor-pointer"
-                                        onClick={() => toggleMessage(messageId)}
-                                      >
-                                        {isOpen ? (
-                                          <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                                            {message.body}
-                                          </div>
-                                        ) : (
-                                          <div className="text-sm text-gray-700 line-clamp-4">
-                                            {message.body ? message.body.substring(0, 200) + (message.body.length > 200 ? '...' : '') : '本文なし'}
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      {/* メッセージフッター */}
-                                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                                        <span>{formatDate(message.created_at?.value || message.created_at)}</span>
-                                      </div>
-                                      
-                                      {/* 開閉アイコン */}
-                                      <div className="flex justify-center mt-2">
-                                        <div className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                          </svg>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                {/* 自社メッセージ（右側） */}
-                                {message.isFromCompany && (
-                                  <div className="flex items-start gap-2 max-w-[70%] flex-row-reverse">
-                                    {/* アバター */}
-                                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                      {(() => {
-                                        const sender = message.from || message.sender || ''
-                                        const emailMatch = sender.match(/<([^>]+)>/)
-                                        if (emailMatch) {
-                                          return emailMatch[1].charAt(0).toUpperCase()
-                                        }
-                                        return sender.charAt(0).toUpperCase()
-                                      })()}
-                                    </div>
-                                    
-                                    {/* メッセージバブル */}
-                                    <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 min-w-0">
-                                      {/* メッセージヘッダー */}
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xs font-medium text-blue-800">
-                                          {(() => {
-                                            const sender = message.from || message.sender || ''
-                                            const emailMatch = sender.match(/<([^>]+)>/)
-                                            if (emailMatch) {
-                                              return emailMatch[1]
-                                            }
-                                            return sender
-                                          })()}
-                                        </span>
-                                        <Badge variant="secondary" className="text-xs bg-blue-200 text-blue-800">
-                                          送信
-                                        </Badge>
-                                        {message.is_root && (
-                                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                                            ルート
-                                          </span>
-                                        )}
-                                        {/* 転送サービス経由の場合の表示 */}
-                                        {(message.from?.includes('via') || message.from?.includes('Via')) && (
-                                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                            転送経由
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      {/* 件名 */}
-                                      {message.message_subject && (
-                                        <div className="text-sm font-medium text-gray-900 mb-2">
-                                          {message.message_subject}
-                                        </div>
-                                      )}
-                                      
-                                      {/* メッセージ内容 */}
-                                      <div 
-                                        className="cursor-pointer"
-                                        onClick={() => toggleMessage(messageId)}
-                                      >
-                                        {isOpen ? (
-                                          <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                                            {message.body}
-                                          </div>
-                                        ) : (
-                                          <div className="text-sm text-gray-700 line-clamp-4">
-                                            {message.body ? message.body.substring(0, 200) + (message.body.length > 200 ? '...' : '') : '本文なし'}
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      {/* メッセージフッター */}
-                                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                                        <span>{formatDate(message.created_at?.value || message.created_at)}</span>
-                                      </div>
-                                      
-                                      {/* 開閉アイコン */}
-                                      <div className="flex justify-center mt-2">
-                                        <div className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                          </svg>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                          
-                          {/* ページネーションコントロール */}
-                          {totalPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setMessageCurrentPage(Math.max(1, messageCurrentPage - 1))}
-                                disabled={messageCurrentPage === 1}
-                                className="text-xs"
-                              >
-                                前へ
-                              </Button>
-                              
-                              <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                  const pageNum = Math.max(1, Math.min(totalPages, messageCurrentPage - 2 + i))
-                                  return (
-                                    <Button
-                                      key={pageNum}
-                                      variant={pageNum === messageCurrentPage ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => setMessageCurrentPage(pageNum)}
-                                      className="text-xs w-8 h-8"
-                                    >
-                                      {pageNum}
-                                    </Button>
-                                  )
-                                })}
-                              </div>
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setMessageCurrentPage(Math.min(totalPages, messageCurrentPage + 1))}
-                                disabled={messageCurrentPage === totalPages}
-                                className="text-xs"
-                              >
-                                次へ
-                              </Button>
-                            </div>
-                          )}
-                        </>
-                      )
+                      return categorizedMessages.map((message: any) => (
+                        <ThreadChatMessage
+                          key={message.message_id || message.alert_id}
+                          message={message}
+                          isRoot={message.is_root === true}
+                          isOpen={openMessages.has(message.message_id || message.alert_id)}
+                          onToggle={() => toggleMessage(message.message_id || message.alert_id)}
+                        />
+                      ))
                     })()}
                   </div>
                 </CardContent>
               </Card>
             )}
 
+            {(!modalMessages || modalMessages.length === 0) && (
+              <Card>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground py-8 text-center">
+                    メッセージはまだ読み込まれていません。詳細を開くと自動取得します。
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -1256,7 +1043,7 @@ function AlertDetailModal({
   )
 }
 
-export default function AlertsPage() {
+function AlertsPageInner() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -1280,8 +1067,31 @@ export default function AlertsPage() {
 
   // フィルター状態
   const [filters, setFilters] = useState({
-    status: ''
+    status: '',
+    assignee: '',
   })
+
+  // 表示密度
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable')
+
+  // ビュー切替（一覧 or カンバン）
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+
+  // URLクエリから初期フィルタを読み込み（assignee=me等）
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const qpAssignee = searchParams.get('assignee')
+    if (qpAssignee === 'me') {
+      // 現状ユーザー識別はBasic認証のユーザー名を仮利用
+      const currentUser = 'cmgadmin'
+      setFilters(prev => ({ ...prev, assignee: currentUser }))
+    }
+    const qpStatus = searchParams.get('status')
+    if (qpStatus) {
+      setFilters(prev => ({ ...prev, status: qpStatus }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // セグメント選択状態
   const [selectedSegment, setSelectedSegment] = useState<string>('all')
@@ -1371,13 +1181,17 @@ export default function AlertsPage() {
       })
       
       if (filters.status) params.append('status', filters.status)
+      if (filters.assignee) params.append('assignee', filters.assignee === 'cmgadmin' ? 'me' : filters.assignee)
       if (activeSearchTerm && activeSearchTerm.trim() !== '') {
         params.append('search', activeSearchTerm.trim())
       }
+
+      // 初期ロード負荷軽減: メッセージは含めない（期間はデフォルト未指定で全体から取得）
+      params.append('include_messages', 'false')
       
       const response = await fetch(`${apiEndpoint}?${params}`, {
         headers: {
-          'Authorization': `Basic ${btoa('admin-user:your-secure-password')}`
+          'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}`
         }
       })
       
@@ -1666,6 +1480,27 @@ export default function AlertsPage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [loadMore])
 
+  // ステータス正規化（カンバン用）: フック順序を安定させるため loading 分岐より前に配置
+  const normalizeStatus = useCallback((status: string): 'pending' | 'in_progress' | 'resolved' => {
+    if (!status) return 'pending'
+    if (['pending', '未対応', '新規', 'new'].includes(status)) return 'pending'
+    if (['in_progress', '対応中', 'progress'].includes(status)) return 'in_progress'
+    if (['resolved', '解決済み', 'done'].includes(status)) return 'resolved'
+    return 'pending'
+  }, [])
+
+  const kanbanColumns = useMemo(() => {
+    const cols: Record<'pending' | 'in_progress' | 'resolved', any[]> = {
+      pending: [],
+      in_progress: [],
+      resolved: [],
+    }
+    filteredAlerts.forEach(a => {
+      cols[normalizeStatus(a.status)].push(a)
+    })
+    return cols
+  }, [filteredAlerts, normalizeStatus])
+
   // ローディング中の表示
   if (loading) {
     return (
@@ -1707,9 +1542,9 @@ export default function AlertsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
-                    既存セグメント分類
+                    AI戦略提案（セグメント）
                   </CardTitle>
-                  <CardDescription>感情分析による既存セグメントシステムへの自動分類</CardDescription>
+                  <CardDescription>セールス視点の提案セグメントをワンタップ切替</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 overflow-y-auto max-h-[1078px]">
                   {/* 全てのアラート */}
@@ -2018,7 +1853,7 @@ export default function AlertsPage() {
                     検索
                   </Button>
                   <div className="flex gap-2 sm:gap-3">
-                <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                    <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
                       <SelectTrigger className="w-full sm:w-[140px] h-9">
                         <SelectValue placeholder="対応状況" />
                       </SelectTrigger>
@@ -2029,6 +1864,56 @@ export default function AlertsPage() {
                         <SelectItem value="resolved">解決済み</SelectItem>
                       </SelectContent>
                     </Select>
+                    {/* 表示密度トグル */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant={density === 'comfortable' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDensity('comfortable')}
+                        className="h-9"
+                        title="快適"
+                      >
+                        <Rows className="h-4 w-4 mr-1" />快適
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={density === 'compact' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDensity('compact')}
+                        className="h-9"
+                        title="密"
+                      >
+                        <List className="h-4 w-4 mr-1" />密
+                      </Button>
+                    </div>
+                    {/* ビュー切替（一覧/カンバン） */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant={viewMode === 'list' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="h-9"
+                        title="一覧"
+                      >
+                        <Rows className="h-4 w-4 mr-1" />一覧
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={viewMode === 'kanban' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('kanban')}
+                        className="h-9"
+                        title="カンバン"
+                      >
+                        <LayoutGrid className="h-4 w-4 mr-1" />カンバン
+                      </Button>
+                    </div>
+                    {/* assignee=me が有効なときの表示 */}
+                    {filters.assignee && (
+                      <Badge variant="outline" className="self-center">自分の担当のみ</Badge>
+                    )}
                   </div>
                 </div>
 
@@ -2041,165 +1926,137 @@ export default function AlertsPage() {
               </div>
             )}
 
-                {/* アラート一覧 */}
+                {/* アラート一覧 / カンバン */}
             {!loading && (
               <>
-                <div className="space-y-2">
-                  {filteredAlerts.map((alert: any, index: number) => (
-                    <div
-                      key={`${alert.thread_id || alert.id || index}`}
-                      className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer bg-card hover:bg-accent/50 border-l-4 ${
-                        alert.priority === 'high'
-                          ? 'border-l-red-500'
-                          : alert.priority === 'medium'
-                          ? 'border-l-yellow-500'
-                          : 'border-l-blue-500'
-                      }`}
-                      onClick={() => handleAlertClick(alert)}
-                    >
-                      {/* メイン情報行 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-2">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {alert.priority === 'high' ? (
-                              <AlertTriangle className="w-4 h-4 text-red-500" />
-                            ) : alert.priority === 'medium' ? (
-                              <AlertCircle className="w-4 h-4 text-yellow-500" />
-                            ) : (
-                              <Info className="w-4 h-4 text-blue-500" />
-                            )}
-                            <div className="text-sm font-semibold text-foreground">
-                              {alert.id}
+                {viewMode === 'list' ? (
+                  <div className="space-y-2">
+                    {filteredAlerts.map((alert: any, index: number) => (
+                      <div
+                        key={`${alert.thread_id || alert.id || index}`}
+                        className={`${density === 'compact' ? 'p-2' : 'p-3'} border rounded-lg hover:shadow-md transition-all cursor-pointer bg-card hover:bg-accent/50 border-l-4 ${
+                           alert.priority === 'high'
+                             ? 'border-l-red-500'
+                             : alert.priority === 'medium'
+                             ? 'border-l-yellow-500'
+                             : 'border-l-blue-500'
+                         }`}
+                        onClick={() => handleAlertClick(alert)}
+                      >
+                        {/* メイン情報行 */}
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between ${density === 'compact' ? 'gap-1 mb-1' : 'gap-2 mb-2'}`}>
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {alert.priority === 'high' ? (
+                                <AlertTriangle className="w-4 h-4 text-red-500" />
+                              ) : alert.priority === 'medium' ? (
+                                <AlertCircle className="w-4 h-4 text-yellow-500" />
+                              ) : (
+                                <Info className="w-4 h-4 text-blue-500" />
+                              )}
+                              <div className={`${density === 'compact' ? 'text-xs' : 'text-sm'} font-semibold text-foreground`}>
+                                 {alert.id}
+                               </div>
+                             </div>
+
+                            <div className={`flex items-center ${density === 'compact' ? 'gap-1' : 'gap-2'} flex-1 min-w-0`}>
+                              <h4 className={`font-medium ${density === 'compact' ? 'text-xs' : 'text-sm'} truncate`}>
+                                <HighlightedText 
+                                  text={alert.subject || alert.keyword} 
+                                  keyword={alert.keyword} 
+                                />
+                              </h4>
+                              {getLevelBadge(alert.priority)}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">
-                              <HighlightedText 
-                                text={alert.subject || alert.keyword} 
-                                keyword={alert.keyword} 
-                              />
-                            </h4>
-                            {getLevelBadge(alert.priority)}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {getStatusBadge(alert.status)}
+                            {/* スレッド情報 */}
+                            <div className={`${density === 'compact' ? 'text-[10px] px-1 py-0.5' : 'text-xs px-2 py-1'} text-muted-foreground bg-muted rounded`}>
+                               {alert.message_count || 1}件
+                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {getStatusBadge(alert.status)}
-                          {/* スレッド情報 */}
-                          <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {alert.message_count || 1}件
-                          </div>
-                        </div>
+                        {/* 詳細情報行 */}
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between ${density === 'compact' ? 'text-[10px]' : 'text-xs'} text-muted-foreground gap-1 sm:gap-0`}>
+                           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                             <span>{formatDate(alert.created_at)}</span>
+                             <span>送信者: {alert.sender}</span>
+                             {alert.message_count > 1 && (
+                               <span>最終更新: {formatDate(alert.updated_at)}</span>
+                             )}
+                           </div>
+                           <span>詳細を表示 →</span>
+                         </div>
+
+                        {/* 説明と顧客情報 */}
+                        <div className={`${density === 'compact' ? 'mt-1 pt-1' : 'mt-2 pt-2'} border-t border-border/50`}>
+                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                             <p className={`${density === 'compact' ? 'text-[10px]' : 'text-xs'} text-muted-foreground flex-1 line-clamp-2`}>
+                               {alert.subject}
+                             </p>
+                             <div className="text-xs text-muted-foreground flex-shrink-0 sm:text-right">
+                               顧客: {alert.customer_email}
+                             </div>
+                           </div>
+                         </div>
+
+                        {/* 既存セグメント分類表示 */}
                       </div>
-
-                      {/* 詳細情報行 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-1 sm:gap-0">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                          <span>{formatDate(alert.created_at)}</span>
-                          <span>送信者: {alert.sender}</span>
-                          {alert.message_count > 1 && (
-                            <span>最終更新: {formatDate(alert.updated_at)}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {([
+                      { key: 'pending', title: '未対応', color: 'border-red-300', badgeVariant: 'destructive' },
+                      { key: 'in_progress', title: '対応中', color: 'border-yellow-300', badgeVariant: 'secondary' },
+                      { key: 'resolved', title: '解決済み', color: 'border-green-300', badgeVariant: 'default' },
+                    ] as const).map(col => (
+                      <div key={col.key} className={`rounded-lg border ${col.color} bg-card`}>
+                        <div className="p-3 border-b flex items-center justify-between">
+                          <div className="text-sm font-semibold">{col.title}</div>
+                          <Badge variant="outline" className="text-xs">
+                            {kanbanColumns[col.key].length}件
+                          </Badge>
+                        </div>
+                        <div className="p-3 space-y-2">
+                          {kanbanColumns[col.key].map((alert: any, index: number) => (
+                            <div
+                              key={`${alert.thread_id || alert.id || index}`}
+                              className="p-3 border rounded-lg hover:shadow-sm transition-all cursor-pointer bg-background"
+                              onClick={() => handleAlertClick(alert)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="text-xs font-semibold truncate max-w-[180px]">
+                                    <HighlightedText text={alert.subject || alert.keyword} keyword={alert.keyword} />
+                                  </div>
+                                  {getLevelBadge(alert.priority)}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  {alert.message_count || 1}件
+                                </div>
+                              </div>
+                              <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                                <span>{formatDate(alert.created_at)}</span>
+                                <span className="truncate max-w-[140px]">{alert.sender}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {kanbanColumns[col.key].length === 0 && (
+                            <div className="text-xs text-muted-foreground text-center py-4">
+                              該当なし
+                            </div>
                           )}
                         </div>
-                        <span>詳細を表示 →</span>
                       </div>
-
-                      {/* 説明と顧客情報 */}
-                      <div className="mt-2 pt-2 border-t border-border/50">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
-                          <p className="text-xs text-muted-foreground flex-1 line-clamp-2">
-                            {alert.subject}
-                          </p>
-                          <div className="text-xs text-muted-foreground flex-shrink-0 sm:text-right">
-                            顧客: {alert.customer_email}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 既存セグメント分類表示 */}
-                      {alert.existing_segment_id && (
-                        <div className="mt-2 pt-2 border-t border-border/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs ${alert.existing_segment_color || 'bg-gray-50 text-gray-700 border-gray-200'}`}
-                              >
-                                {alert.existing_segment_name || '未分類'}
-                              </Badge>
-                              <div className="text-xs text-muted-foreground">
-                                信頼度: {((alert.mapping_confidence || 0) * 100).toFixed(0)}%
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Badge 
-                                variant={
-                                  alert.sentiment === 'urgent' ? "destructive" :
-                                  alert.sentiment === 'negative' ? "secondary" :
-                                  alert.sentiment === 'positive' ? "default" : "outline"
-                                }
-                                className="text-xs"
-                              >
-                                {alert.sentiment === 'urgent' ? '緊急' :
-                                 alert.sentiment === 'negative' ? 'ネガ' :
-                                 alert.sentiment === 'positive' ? 'ポジ' : '中立'}
-                              </Badge>
-                              <Badge 
-                                variant={
-                                  alert.existing_segment_priority === 'high' ? "destructive" :
-                                  alert.existing_segment_priority === 'medium' ? "secondary" : "outline"
-                                }
-                                className="text-xs"
-                              >
-                                {alert.existing_segment_priority === 'high' ? '高' :
-                                 alert.existing_segment_priority === 'medium' ? '中' : '低'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* AI検知結果表示 */}
-                      {alert.detection_score && (
-                        <div className="mt-2 pt-2 border-t border-border/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                              >
-                                AI検知: {alert.detected_pattern}
-                              </Badge>
-                              <div className="text-xs text-muted-foreground">
-                                スコア: {(alert.detection_score * 100).toFixed(0)}%
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Badge 
-                                variant={alert.urgency_level === 'critical' ? "destructive" : 
-                                        alert.urgency_level === 'high' ? "secondary" : 
-                                        alert.urgency_level === 'medium' ? "default" : "outline"}
-                                className="text-xs"
-                              >
-                                {alert.urgency_level === 'critical' ? '緊急' :
-                                 alert.urgency_level === 'high' ? '高' :
-                                 alert.urgency_level === 'medium' ? '中' : '低'}
-                              </Badge>
-                              <Badge 
-                                variant={alert.risk_score > 70 ? "destructive" : 
-                                        alert.risk_score > 40 ? "secondary" : "outline"}
-                                className="text-xs"
-                              >
-                                リスク: {alert.risk_score}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
 
                 {/* ページネーション */}
                 {(selectedSegment === 'all' ? pagination.totalPages > 1 : filteredAlerts.length > pagination.limit) && (
@@ -2337,7 +2194,7 @@ export default function AlertsPage() {
                       onClick={() => {
                         setSearchTerm('')
                         setActiveSearchTerm('')
-                        setFilters({ status: '' })
+                        setFilters(prev => ({ ...prev, status: '' }))
                         setCurrentPage(1)
                         fetchAlerts(1, true)
                       }}
@@ -2345,8 +2202,6 @@ export default function AlertsPage() {
                       フィルターをリセット
                     </Button>
                   </div>
-                )}
-              </>
                 )}
               </CardContent>
             </Card>
@@ -2362,5 +2217,13 @@ export default function AlertsPage() {
         onStatusChange={handleStatusChange}
       />
     </div>
+  )
+}
+
+export default function AlertsPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8">読み込み中...</div>}>
+      <AlertsPageInner />
+    </Suspense>
   )
 }

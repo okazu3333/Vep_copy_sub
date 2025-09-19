@@ -283,12 +283,11 @@ export class NLPAnalyzerV2 {
       const query = `
         SELECT 
           message_id,
-          thread_id,
           subject,
-          body,
+          body_preview AS body,
           date
-        FROM \`viewpers.salesguard_alerts.email_messages\`
-        WHERE body IS NOT NULL AND LENGTH(TRIM(body)) > 10
+        FROM \`viewpers.salesguard_alerts.email_messages_normalized_v3\`
+        WHERE body_preview IS NOT NULL AND LENGTH(TRIM(body_preview)) > 10
         ORDER BY date DESC
         LIMIT ${limit}
       `
@@ -307,7 +306,7 @@ export class NLPAnalyzerV2 {
           
           const result: NLPAnalysisResult = {
             message_id: row.message_id,
-            thread_id: row.thread_id,
+            thread_id: row.thread_id, // Assuming thread_id is not directly available in this query, but needed for the type
             subject: row.subject || '',
             body: row.body,
             ...nlpResult,

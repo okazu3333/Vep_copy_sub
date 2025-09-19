@@ -1,0 +1,9 @@
+{
+  "name": "Scoring Pipeline",
+  "description": "Score threaded email messages and write to BigQuery alerts_v2_scored.",
+  "parameters": [
+    {"name": "dest_dataset", "label": "Destination dataset", "helpText": "BigQuery dataset for scored table", "isOptional": false},
+    {"name": "dest_table", "label": "Destination table", "helpText": "BigQuery table name (e.g., alerts_v2_scored)", "isOptional": false},
+    {"name": "source_table", "label": "Source table (project:dataset.table)", "helpText": "Defaults to viewpers:salesguard_alerts.email_messages_threaded_v1", "isOptional": true}
+  ]
+} 

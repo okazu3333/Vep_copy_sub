@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Basic認証の設定
-const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME || 'admin-user'
-const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || 'password123'
+// Basic認証の設定（固定）
+const BASIC_AUTH_USERNAME = 'cmgadmin'
+const BASIC_AUTH_PASSWORD = 'crossadmin'
 
 export function middleware(request: NextRequest) {
   // デバッグ用: 認証情報をログ出力
@@ -59,14 +59,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 }

@@ -54,8 +54,8 @@ async function getCurrentStatus() {
       COUNT(CASE WHEN status = '新規' THEN 1 END) as pending_cases,
       COUNT(CASE WHEN status = '対応中' THEN 1 END) as in_progress_cases,
       COUNT(CASE WHEN status = '解決済み' THEN 1 END) as resolved_cases,
-      COUNT(CASE WHEN DATE(PARSE_TIMESTAMP('%a, %d %b %Y %H:%M:%S %z', date)) = CURRENT_DATE() THEN 1 END) as today_new_cases
-    FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\`
+      COUNT(CASE WHEN DATE(datetime) = CURRENT_DATE() THEN 1 END) as today_new_cases
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
   `
   
   const [rows] = await bigquery.query({ query })
@@ -80,7 +80,7 @@ async function getPriorityDistribution() {
     SELECT 
       priority,
       COUNT(*) as count
-    FROM \`salesguard_alerts.alerts_clean_v7_dedup\`
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
     GROUP BY priority
   `
   
@@ -99,8 +99,6 @@ async function getPriorityDistribution() {
   }))
 }
 
-
-
 // 3. 検知パターン分析
 async function getDetectionPatterns() {
   // 全件数と検知パターンの分析
@@ -113,7 +111,7 @@ async function getDetectionPatterns() {
       COUNT(DISTINCT thread_id) as total_threads,
       COUNT(CASE WHEN is_root = TRUE THEN 1 END) as root_messages,
       COUNT(CASE WHEN is_root = FALSE THEN 1 END) as reply_messages
-    FROM \`salesguard_alerts.alerts_clean_v7_dedup\`
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
   `
   
   const [rows] = await bigquery.query({ query })
@@ -124,7 +122,7 @@ async function getDetectionPatterns() {
     SELECT 
       department,
       COUNT(*) as count
-    FROM \`salesguard_alerts.alerts_clean_v7_dedup\`
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
     WHERE department IS NOT NULL
     GROUP BY department
     ORDER BY count DESC
@@ -142,7 +140,7 @@ async function getDetectionPatterns() {
         ELSE '低リスク (0-19)'
       END as risk_level,
       COUNT(*) as count
-    FROM \`salesguard_alerts.alerts_clean_v7_dedup\`
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
     GROUP BY risk_level
     ORDER BY 
       CASE risk_level
@@ -174,8 +172,6 @@ async function getDetectionPatterns() {
   }
 }
 
-
-
 // 6. 担当者別分析
 async function getStaffAnalysis() {
   const query = `
@@ -188,7 +184,7 @@ async function getStaffAnalysis() {
       COUNT(CASE WHEN priority = '高' THEN 1 END) as high_priority_cases,
       COUNT(CASE WHEN priority = '中' THEN 1 END) as medium_priority_cases,
       COUNT(CASE WHEN priority = '低' THEN 1 END) as low_priority_cases
-    FROM \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\`
+    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
     GROUP BY \`from\`
     ORDER BY total_cases DESC
     LIMIT 10
