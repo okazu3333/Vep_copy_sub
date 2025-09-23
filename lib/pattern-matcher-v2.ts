@@ -588,7 +588,7 @@ export class PatternMatcherV2 {
     confidence: number,
     nlpResult: NLPAnalysisResult
   ): number {
-    let baseScore = pattern.riskScore
+    const baseScore = pattern.riskScore
     
     // 信頼度による調整
     const confidenceMultiplier = 0.5 + (confidence * 0.5)
@@ -640,7 +640,7 @@ export class PatternMatcherV2 {
     urgencyLevel: string,
     businessImpact: string
   ): string[] {
-    let actions = [...pattern.recommendedActions]
+    const actions = [...pattern.recommendedActions]
     
     // 緊急度に応じたアクションの追加
     if (urgencyLevel === 'critical') {

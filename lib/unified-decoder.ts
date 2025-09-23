@@ -287,8 +287,8 @@ export class UnifiedDecoder {
       
       // データソース別処理
       if (dataSource === 'bigquery') {
-        const { BigQuery } = require('@google-cloud/bigquery');
-        const bigquery = new BigQuery({ projectId: 'viewpers' });
+        const mod = await import('@google-cloud/bigquery');
+        const bigquery = new mod.BigQuery({ projectId: 'viewpers' });
         
         const [rows] = await bigquery.query(query);
         const limitedRows = rows.slice(0, maxRecords);
@@ -299,8 +299,8 @@ export class UnifiedDecoder {
         });
         
       } else if (dataSource === 'cloudsql') {
-        const { Client } = require('pg');
-        const client = new Client({
+        const mod = await import('pg');
+        const client = new mod.Client({
           host: '34.146.200.199',
           port: 5432,
           user: 'postgres',

@@ -71,7 +71,7 @@ export class EmailDecoder {
       // 明らかに文字化けしている場合は、エスケープシーケンスを削除して再試行
       if (decoded.includes('\x1b') || decoded.includes('$B') || decoded.includes('(B')) {
         // エスケープシーケンスを削除
-        let cleaned = buffer.toString('binary')
+        const cleaned = buffer.toString('binary')
           .replace(/\x1b\$B/g, '') // 日本語モード開始
           .replace(/\x1b\(B/g, '') // ASCII モード復帰
           .replace(/\x1b\$\@/g, '') // JIS X 0208-1978
