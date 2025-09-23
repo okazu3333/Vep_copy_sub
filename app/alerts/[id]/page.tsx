@@ -5,21 +5,20 @@ import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   ArrowLeft,
-  Mail,
   MessageSquare,
   Clock,
   AlertTriangle,
   User,
   Building2,
   Calendar,
-  Tag,
+  /* Tag, */
   CheckCircle,
   Pause,
   ChevronDown,
@@ -158,6 +157,7 @@ export default function AlertDetailPage() {
     return highlightedText
   }
 
+  /*
   const getToolIcon = (tool: string) => {
     switch (tool) {
       case "gmail":
@@ -168,6 +168,7 @@ export default function AlertDetailPage() {
         return <MessageSquare className="h-4 w-4" />
     }
   }
+  */
 
   const getStatusBadge = (status: string) => {
     switch (status) {

@@ -3,7 +3,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // 1. alert_idカラムを追加
     const addColumnQuery = `

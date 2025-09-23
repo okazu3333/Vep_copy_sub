@@ -3,7 +3,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // email_messagesテーブルにalert_idフィールドを追加
     const addColumnQuery = `
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 簡単なクエリでテーブル構造を確認
     const simpleQuery = `
