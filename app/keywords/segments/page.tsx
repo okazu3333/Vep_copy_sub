@@ -1415,9 +1415,7 @@ export default function SegmentsPage() {
                     <Badge variant="outline" className="text-xs">実際の使用例</Badge>
                   </Label>
                   <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg mt-2">
-                    <p className="text-sm text-blue-800 dark:text-blue-200 italic">
-                      "{pendingScenario.useCase}"
-                    </p>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 italic">&quot;{pendingScenario.useCase}&quot;</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     このようなメッセージが検知された場合にテンプレートが適用されます

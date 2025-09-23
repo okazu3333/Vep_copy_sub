@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     const level = searchParams.get('level')
     
     // 検索条件の構築
-    let whereConditions = []
-    let queryParams = []
+    const whereConditions: string[] = []
+    const queryParams: any[] = []
     let paramIndex = 1
     
     if (search) {
