@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -10,20 +11,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Moon, Sun, User, LogOut } from "lucide-react"
+import { Bell, Moon, Sun, User, LogOut, LayoutDashboard, Search } from "lucide-react"
 import { useTheme } from "next-themes"
+import Link from "next/link"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">営業トラブルアラートシステム</h2>
+    <header className="bg-white/90 backdrop-blur border-b border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 px-6 py-3">
+      <div className="flex items-center gap-4">
+        {/* Brand */}
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2 text-gray-900 dark:text-white">
+            <LayoutDashboard className="h-5 w-5" />
+            <h2 className="text-base font-semibold leading-none">SalesGuard</h2>
+          </Link>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Search */}
+        <div className="hidden md:flex items-center gap-2 flex-1 max-w-2xl">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-9" placeholder="検索（件名・本文・顧客・担当者）" />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="ml-auto flex items-center space-x-2">
           <Button variant="ghost" size="sm">
             <Bell className="h-4 w-4" />
           </Button>

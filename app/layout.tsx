@@ -3,6 +3,10 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/header'
 import { Sidebar } from '@/components/sidebar'
+import { Inter } from 'next/font/google'
+import { Toaster } from '@/components/ui/sonner'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'SalesGuard Alerts',
@@ -16,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground">
+      <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <div className="flex min-h-screen">
             <Sidebar />
@@ -27,6 +31,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

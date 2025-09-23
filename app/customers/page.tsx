@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,65 +16,54 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Upload, Download, Search, Building2, Users } from "lucide-react"
-
-const customersData = [
-  {
-    id: "CUST-001",
-    name: "株式会社サンプル",
-    contact: "田中太郎",
-    email: "tanaka@sample.co.jp",
-    phone: "03-1234-5678",
-    status: "active",
-    lastContact: "2024-01-15",
-    assignedTo: "佐藤一郎",
-  },
-  {
-    id: "CUST-002",
-    name: "テスト商事株式会社",
-    contact: "山田花子",
-    email: "yamada@test.co.jp",
-    phone: "03-8765-4321",
-    status: "prospect",
-    lastContact: "2024-01-14",
-    assignedTo: "田中花子",
-  },
-  {
-    id: "CUST-003",
-    name: "デモ株式会社",
-    contact: "鈴木次郎",
-    email: "suzuki@demo.co.jp",
-    phone: "03-5555-1111",
-    status: "inactive",
-    lastContact: "2024-01-10",
-    assignedTo: "山田太郎",
-  },
-]
+import { Plus, Upload, Download, Search, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState(customersData)
+  const [rows, setRows] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const limit = 20
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default">アクティブ</Badge>
-      case "prospect":
-        return <Badge variant="secondary">見込み客</Badge>
-      case "inactive":
-        return <Badge variant="outline">非アクティブ</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
+  const fetchCustomers = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (searchTerm) params.set('search', searchTerm)
+      params.set('page', String(page))
+      params.set('limit', String(limit))
+      const resp = await fetch(`/api/customers?${params.toString()}`, { headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` }})
+      const json = await resp.json()
+      if (json?.success) {
+        setRows(json.customers)
+        const pg = json.pagination
+        setTotal(Number(pg?.total || 0))
+        setTotalPages(Number(pg?.totalPages || 1))
+      } else {
+        setRows([]); setTotal(0); setTotalPages(1)
+      }
+    } catch {
+      setRows([]); setTotal(0); setTotalPages(1)
+    } finally { setLoading(false) }
   }
+
+  useEffect(() => { fetchCustomers() }, [])
+  useEffect(() => { const t = setTimeout(fetchCustomers, 300); return () => clearTimeout(t) }, [searchTerm, page])
+
+  // 重複除去（customer_id -> email -> company_id -> domain の優先順でキー化）
+  const unique = useMemo(() => {
+    const map = new Map<string, any>()
+    for (const r of rows) {
+      const k = String(r.customer_id || r.email || r.company_id || r.domain || `${r.company_name || 'row'}`)
+      if (!map.has(k)) map.set(k, r)
+    }
+    return Array.from(map.values())
+  }, [rows])
+
+  const filtered = useMemo(() => unique, [unique])
 
   return (
     <div className="p-6">
@@ -87,7 +76,6 @@ export default function CustomersPage() {
         <TabsList>
           <TabsTrigger value="list">顧客一覧</TabsTrigger>
           <TabsTrigger value="import">データインポート</TabsTrigger>
-          <TabsTrigger value="integration">CRM連携</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list">
@@ -115,9 +103,9 @@ export default function CustomersPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="顧客名、担当者名、メールアドレスで検索..."
+                    placeholder="会社名、担当者名、メールアドレスで検索..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
                     className="pl-10"
                   />
                 </div>
@@ -131,33 +119,43 @@ export default function CustomersPage() {
                       <TableHead>会社名</TableHead>
                       <TableHead>担当者</TableHead>
                       <TableHead>メールアドレス</TableHead>
-                      <TableHead>電話番号</TableHead>
-                      <TableHead>ステータス</TableHead>
-                      <TableHead>最終接触日</TableHead>
-                      <TableHead>担当営業</TableHead>
+                      <TableHead>作成日時</TableHead>
                       <TableHead>アクション</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCustomers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">{customer.id}</TableCell>
-                        <TableCell>{customer.name}</TableCell>
-                        <TableCell>{customer.contact}</TableCell>
-                        <TableCell>{customer.email}</TableCell>
-                        <TableCell>{customer.phone}</TableCell>
-                        <TableCell>{getStatusBadge(customer.status)}</TableCell>
-                        <TableCell>{customer.lastContact}</TableCell>
-                        <TableCell>{customer.assignedTo}</TableCell>
+                    {filtered.map((c, idx) => (
+                      <TableRow key={`${c.customer_id || c.email || c.company_id || c.domain}-idx-${idx}`}>
+                        <TableCell className="font-medium">{c.customer_id}</TableCell>
+                        <TableCell>{c.company_name || c.domain}</TableCell>
+                        <TableCell>{c.display_name || '—'}</TableCell>
+                        <TableCell>{c.email}</TableCell>
+                        <TableCell>{c.created_at || '—'}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
-                            編集
-                          </Button>
+                          <Button variant="outline" size="sm">編集</Button>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {(!loading && filtered.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-sm text-muted-foreground">顧客が見つかりませんでした。</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
+              </div>
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">全{total}件</div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled={loading || page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> 前へ
+                  </Button>
+                  <span className="text-sm text-gray-600">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" disabled={loading || page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                    次へ <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -178,60 +176,8 @@ export default function CustomersPage() {
                 </p>
                 <Button>ファイルを選択</Button>
               </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">CSVフォーマット</h4>
-                <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
-                  以下の列を含むCSVファイルをアップロードしてください：
-                </p>
-                <code className="text-xs bg-white dark:bg-gray-800 p-2 rounded block">
-                  会社名,担当者名,メールアドレス,電話番号,ステータス,担当営業
-                </code>
-              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="integration">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Building2 className="h-5 w-5 mr-2" />
-                  Salesforce連携
-                </CardTitle>
-                <CardDescription>Salesforceから顧客データを同期します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">接続状況</span>
-                    <Badge variant="outline">未接続</Badge>
-                  </div>
-                  <Button className="w-full">Salesforceに接続</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  HubSpot連携
-                </CardTitle>
-                <CardDescription>HubSpotから顧客データを同期します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">接続状況</span>
-                    <Badge variant="outline">未接続</Badge>
-                  </div>
-                  <Button className="w-full">HubSpotに接続</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
 
@@ -244,34 +190,20 @@ export default function CustomersPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="company-name" className="text-right">
-                会社名
-              </Label>
+              <Label htmlFor="company-name" className="text-right">会社名</Label>
               <Input id="company-name" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="contact-name" className="text-right">
-                担当者名
-              </Label>
+              <Label htmlFor="contact-name" className="text-right">担当者名</Label>
               <Input id="contact-name" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                メール
-              </Label>
+              <Label htmlFor="email" className="text-right">メール</Label>
               <Input id="email" type="email" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
-                電話番号
-              </Label>
-              <Input id="phone" className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={() => setIsDialogOpen(false)}>
-              保存
-            </Button>
+            <Button type="submit" onClick={() => setIsDialogOpen(false)}>保存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
