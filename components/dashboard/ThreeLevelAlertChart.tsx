@@ -2,10 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Building2, Users, User, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
+import { Building2, Users, User, AlertTriangle } from 'lucide-react';
 import { mockCompanyAlerts, mockDepartmentDetails, mockPersonalAlerts } from '@/lib/mock-data';
 
 type DepartmentDatum = { department: string; count: number };
@@ -56,41 +55,6 @@ export function ThreeLevelAlertChart({ departments, riskLevels, personalTop }: T
     if (label.includes('低')) return '#EAB308';
     return '#3B82F6';
   }
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'low':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-3 w-3 text-red-500" />;
-      case 'down':
-        return <TrendingDown className="h-3 w-3 text-green-500" />;
-      default:
-        return <Minus className="h-3 w-3 text-gray-500" />;
-    }
-  };
-
-  const getTrendText = (trend: string) => {
-    switch (trend) {
-      case 'up':
-        return '増加傾向';
-      case 'down':
-        return '減少傾向';
-      default:
-        return '安定';
-    }
-  };
 
   return (
     <Card>
@@ -181,17 +145,31 @@ export function ThreeLevelAlertChart({ departments, riskLevels, personalTop }: T
             </div>
           </TabsContent>
 
-          {/* 個人別分析 */}
+          {/* 個人別（個人アラート件数 + 個人リスク分布） */}
           <TabsContent value="personal" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-4">個人別アラート件数（上位）</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={personalData}>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={personalData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-30} textAnchor="end" height={80} />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={120}
+                      interval={0}
+                      fontSize={11}
+                      tick={{ fontSize: 11 }}
+                    />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip 
+                      formatter={(value, name, props) => [
+                        value, 
+                        'アラート数',
+                        `担当者: ${props.payload.name}`
+                      ]}
+                    />
                     <Bar dataKey="alerts" fill="#F59E0B" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -199,7 +177,7 @@ export function ThreeLevelAlertChart({ departments, riskLevels, personalTop }: T
               
               <div>
                 <h3 className="text-lg font-semibold mb-4">個人リスクレベル分布（概算）</h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
                       data={[

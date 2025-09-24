@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // 1. 重複を削除したクリーンなテーブルを作成
     const createCleanTableQuery = `
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       WHERE thread_id IS NOT NULL
     `
 
-    const [createResult, countResult, threadResult] = await Promise.all([
+    const [_createResult, countResult, threadResult] = await Promise.all([
       bigquery.query({
         query: createCleanTableQuery,
         useLegacySql: false,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GETメソッドで現在の状況を確認
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const countQuery = `
       SELECT 

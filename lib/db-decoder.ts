@@ -32,7 +32,7 @@ export class DatabaseDecoder {
           const content = arrayStr.slice(1, -1); // [ ] を除去
           const items = content.split(',').map(item => item.trim()).filter(item => item && item !== '');
           return items.join('\n');
-        } catch (error) {
+        } catch {
           return '';
         }
       }

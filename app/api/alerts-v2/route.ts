@@ -24,7 +24,7 @@ const RULES: Array<{ kw: string; weight: number }> = [
   { kw: '返事がない', weight: 1.1 },
 ]
 
-function computeScoreAndKeywords(text: string) {
+function _computeScoreAndKeywords(text: string) {
   let score = 0
   const hits: string[] = []
   for (const { kw, weight } of RULES) {

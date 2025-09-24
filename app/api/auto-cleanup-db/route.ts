@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🚀 データベースクリーンアップを開始...')
 
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 現在のテーブル状況を確認
     const checkQuery = `

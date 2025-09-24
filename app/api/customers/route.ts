@@ -11,35 +11,39 @@ export async function GET(request: NextRequest) {
 
     const bq = new BigQuery({ projectId: 'viewpers' })
 
-    let where = 'c.is_internal = FALSE'
+    // Customer companies (excluding internal domains - already filtered during creation)
+    let where = `1=1`
     const params: Record<string, any> = {}
+    
     if (search) {
-      where += ' AND (LOWER(c.display_name) LIKE LOWER(@kw) OR LOWER(c.email) LIKE LOWER(@kw) OR LOWER(comp.company_name) LIKE LOWER(@kw))'
+      where += ' AND (LOWER(c.company_name) LIKE LOWER(@kw) OR LOWER(c.company_domain) LIKE LOWER(@kw) OR LOWER(c.industry) LIKE LOWER(@kw))'
       params.kw = `%${search}%`
     }
 
     const query = `
       SELECT 
-        c.customer_id,
-        c.email,
-        c.display_name,
-        c.company_id,
-        comp.company_name,
-        comp.domain,
-        c.created_at
-      FROM \`viewpers.salesguard_alerts.customers\` c
-      LEFT JOIN \`viewpers.salesguard_alerts.companies\` comp
-        ON comp.company_id = c.company_id
+        c.company_domain as customer_id,
+        c.company_domain as email,
+        c.company_name as display_name,
+        c.company_domain,
+        c.company_name,
+        c.industry as contact_type,
+        c.risk_level,
+        c.status,
+        c.updated_at as last_activity_at,
+        c.created_at,
+        c.total_messages,
+        c.total_users,
+        c.size_segment
+      FROM \`viewpers.salesguard_alerts.customer_companies\` c
       WHERE ${where}
-      ORDER BY c.created_at DESC
+      ORDER BY c.total_messages DESC
       LIMIT ${limit} OFFSET ${offset}
     `
 
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM \`viewpers.salesguard_alerts.customers\` c
-      LEFT JOIN \`viewpers.salesguard_alerts.companies\` comp
-        ON comp.company_id = c.company_id
+      FROM \`viewpers.salesguard_alerts.customer_companies\` c
       WHERE ${where}
     `
 
@@ -51,8 +55,41 @@ export async function GET(request: NextRequest) {
     const total = Number(countRows?.[0]?.total || 0)
     const totalPages = Math.ceil(total / limit)
 
-    return NextResponse.json({ success: true, customers: rows, pagination: { page, limit, total, totalPages } })
+    // Transform results to match expected format
+    const customers = rows.map((row: any) => ({
+      customer_id: row.customer_id,
+      email: row.email,
+      display_name: row.display_name || row.company_name,
+      company_id: row.company_domain,
+      company_name: row.company_name || row.company_domain,
+      domain: row.company_domain,
+      contact_type: row.contact_type,
+      risk_level: row.risk_level,
+      status: row.status,
+      last_activity_at: row.last_activity_at,
+      created_at: row.created_at,
+      total_messages: row.total_messages,
+      total_users: row.total_users,
+      size_segment: row.size_segment
+    }))
+
+    return NextResponse.json({ 
+      success: true, 
+      customers, 
+      pagination: { page, limit, total, totalPages },
+      info: {
+        external_only: true,
+        excluded_internal_domains: true,
+        source: 'customer_companies'
+      }
+    })
   } catch (e: any) {
-    return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })
+    console.error('Customers API error:', e?.message)
+    return NextResponse.json({ 
+      success: false, 
+      error: e?.message || 'Failed to fetch customers',
+      customers: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
+    }, { status: 500 })
   }
 } 

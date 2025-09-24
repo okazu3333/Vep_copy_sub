@@ -71,7 +71,7 @@ export default function KeywordsPage() {
   const [segmentList, setSegmentList] = useState(segments)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false)
-  const [editingSegment, setEditingSegment] = useState<any>(null)
+  // const [editingSegment, setEditingSegment] = useState<any>(null)
   const [scenarioForm, setScenarioForm] = useState({
     segmentId: "",
     scenarioIndex: -1,
@@ -101,7 +101,7 @@ export default function KeywordsPage() {
       delay: scenario.delay,
       level: scenario.level
     })
-    setEditingSegment(segment)
+    // setEditingSegment(segment)
     setIsDialogOpen(true)
   }
 

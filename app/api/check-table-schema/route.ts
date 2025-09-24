@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 NLP分析結果テーブルのスキーマ確認開始...')
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         column_name,
         data_type,
         is_nullable,
-is_generated
+        is_generated
       FROM \`viewpers.salesguard_alerts.INFORMATION_SCHEMA.COLUMNS\`
       WHERE table_name = 'nlp_analysis_results'
       ORDER BY ordinal_position

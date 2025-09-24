@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🧪 シンプルなBigQuery挿入テスト開始...')
 

@@ -1,7 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { BigQuery } from '@google-cloud/bigquery'
-
-const bigquery = new BigQuery()
+import { NextResponse } from 'next/server'
 
 // 拡張キーワードパターン（感情分析付き）
 const ENHANCED_KEYWORD_PATTERNS = {
@@ -63,7 +60,7 @@ const ENHANCED_KEYWORD_PATTERNS = {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: any) {
   try {
     const { text, analysisType = 'all' } = await request.json()
     

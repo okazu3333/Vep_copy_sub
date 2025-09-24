@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
-const bigquery = new BigQuery()
+const bigquery = new BigQuery({ projectId: 'viewpers' })
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,14 +51,22 @@ async function getCurrentStatus() {
   const query = `
     SELECT 
       COUNT(*) as total_alerts,
-      COUNT(CASE WHEN status = '新規' THEN 1 END) as pending_cases,
-      COUNT(CASE WHEN status = '対応中' THEN 1 END) as in_progress_cases,
-      COUNT(CASE WHEN status = '解決済み' THEN 1 END) as resolved_cases,
+      COUNT(CASE WHEN primary_risk_type = 'high' THEN 1 END) as pending_cases,
+      COUNT(CASE WHEN primary_risk_type = 'medium' THEN 1 END) as in_progress_cases,
+      COUNT(CASE WHEN primary_risk_type = 'low' THEN 1 END) as resolved_cases,
       COUNT(CASE WHEN DATE(datetime) = CURRENT_DATE() THEN 1 END) as today_new_cases
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE primary_risk_type != 'low'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
   `
   
-  const [rows] = await bigquery.query({ query })
+  const [rows] = await bigquery.query({
+    query,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
+  
   const row = rows[0]
   
   return {
@@ -78,18 +86,33 @@ async function getPriorityDistribution() {
   // 各優先度の件数を取得
   const query = `
     SELECT 
-      priority,
+      primary_risk_type as priority,
       COUNT(*) as count
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
-    GROUP BY priority
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE primary_risk_type != 'low'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
+    GROUP BY primary_risk_type
+    ORDER BY count DESC
   `
   
-  const [rows] = await bigquery.query({ query })
+  const [rows] = await bigquery.query({
+    query,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
   
   // 結果をマップ化
   const priorityMap = new Map()
   rows.forEach(row => {
-    priorityMap.set(String(row.priority || ''), Number(row.count || 0))
+    let priority = String(row.priority || '')
+    // Map risk types to Japanese priorities
+    if (priority === 'high') priority = '高'
+    else if (priority === 'medium') priority = '中'
+    else if (priority === 'critical') priority = '緊急'
+    else priority = '低'
+    
+    priorityMap.set(priority, Number(row.count || 0))
   })
   
   // 全ての優先度について、0件でも含めて返す
@@ -111,23 +134,38 @@ async function getDetectionPatterns() {
       COUNT(DISTINCT thread_id) as total_threads,
       COUNT(CASE WHEN is_root = TRUE THEN 1 END) as root_messages,
       COUNT(CASE WHEN is_root = FALSE THEN 1 END) as reply_messages
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE primary_risk_type != 'low'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
   `
   
-  const [rows] = await bigquery.query({ query })
+  const [rows] = await bigquery.query({
+    query,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
   const row = rows[0]
   
   // 部署別検知件数
   const departmentQuery = `
     SELECT 
-      department,
+      company_domain as department,
       COUNT(*) as count
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
-    WHERE department IS NOT NULL
-    GROUP BY department
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE company_domain IS NOT NULL
+      AND primary_risk_type != 'low'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
+    GROUP BY company_domain
     ORDER BY count DESC
+    LIMIT 10
   `
-  const [deptRows] = await bigquery.query({ query: departmentQuery })
+  const [deptRows] = await bigquery.query({
+    query: departmentQuery,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
   
   // スコア分布
   const scoreQuery = `
@@ -140,7 +178,9 @@ async function getDetectionPatterns() {
         ELSE '低リスク (0-19)'
       END as risk_level,
       COUNT(*) as count
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE primary_risk_type != 'low'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
     GROUP BY risk_level
     ORDER BY 
       CASE risk_level
@@ -151,7 +191,12 @@ async function getDetectionPatterns() {
         WHEN '低リスク (0-19)' THEN 5
       END
   `
-  const [scoreRows] = await bigquery.query({ query: scoreQuery })
+  const [scoreRows] = await bigquery.query({
+    query: scoreQuery,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
   
   return {
     totalAlerts: Number(row.total_alerts || 0),
@@ -172,7 +217,7 @@ async function getDetectionPatterns() {
   }
 }
 
-// 6. 担当者別分析
+// 4. 担当者別分析
 async function getStaffAnalysis() {
   const query = `
     SELECT 
@@ -180,17 +225,24 @@ async function getStaffAnalysis() {
       COUNT(*) as total_cases,
       AVG(score) as avg_score,
       AVG(reply_level) as avg_thread_length,
-      COUNT(CASE WHEN priority = '緊急' THEN 1 END) as urgent_cases,
-      COUNT(CASE WHEN priority = '高' THEN 1 END) as high_priority_cases,
-      COUNT(CASE WHEN priority = '中' THEN 1 END) as medium_priority_cases,
-      COUNT(CASE WHEN priority = '低' THEN 1 END) as low_priority_cases
-    FROM \`viewpers.salesguard_alerts.alerts_v2_compat_v7\`
+      COUNT(CASE WHEN primary_risk_type = 'critical' THEN 1 END) as urgent_cases,
+      COUNT(CASE WHEN primary_risk_type = 'high' THEN 1 END) as high_priority_cases,
+      COUNT(CASE WHEN primary_risk_type = 'medium' THEN 1 END) as medium_priority_cases,
+      COUNT(CASE WHEN primary_risk_type = 'low' THEN 1 END) as low_priority_cases
+    FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+    WHERE direction = 'internal'
+      AND DATE(datetime) >= DATE_SUB(CURRENT_DATE(), INTERVAL 120 DAY)
     GROUP BY \`from\`
     ORDER BY total_cases DESC
     LIMIT 10
   `
   
-  const [rows] = await bigquery.query({ query })
+  const [rows] = await bigquery.query({
+    query,
+    useLegacySql: false,
+    location: 'asia-northeast1',
+    maximumBytesBilled: '5000000000'
+  })
   
   // 全体の平均を計算
   const totalCases = rows.reduce((sum, row) => sum + Number(row.total_cases || 0), 0)

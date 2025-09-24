@@ -73,7 +73,7 @@ function runPythonNLPAnalysis(filePath: string, analysisType: string): Promise<a
         try {
           const result = JSON.parse(output)
           resolve(result)
-        } catch (e) {
+        } catch {
           reject(new Error(`Python出力の解析に失敗: ${output}`))
         }
       } else {

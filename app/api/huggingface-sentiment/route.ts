@@ -82,7 +82,7 @@ async function analyzeSentimentWithHuggingFace(text: string, modelKey: string): 
     console.log(`✅ Hugging Face API レスポンス:`, result)
 
     // 結果を感情分析用に変換
-    return transformHuggingFaceResult(result, text)
+    return transformHuggingFaceResult(result)
 
   } catch (error) {
     console.error(`❌ Hugging Face API呼び出しエラー:`, error)
@@ -93,7 +93,7 @@ async function analyzeSentimentWithHuggingFace(text: string, modelKey: string): 
   }
 }
 
-function transformHuggingFaceResult(result: any, text: string): any {
+function transformHuggingFaceResult(result: any): any {
   // Hugging Faceの結果を感情分析用に変換
   // モデルによって結果の形式が異なるため、適応的に処理
   

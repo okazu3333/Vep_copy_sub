@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
-const bigquery = new BigQuery({ projectId: 'viewpers' })
+const PROJECT_ID = process.env.GCP_PROJECT_ID
+  || process.env.GOOGLE_CLOUD_PROJECT
+  || process.env.PROJECT_ID
+  || 'viewpers'
+const BIGQUERY_LOCATION = process.env.BIGQUERY_LOCATION || 'asia-northeast1'
+const ALERT_VIEW = '`viewpers.salesguard_alerts.alerts_v2_compat_unified`'
+
+const bigquery = new BigQuery({ projectId: PROJECT_ID, location: BIGQUERY_LOCATION })
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +31,7 @@ export async function GET(request: NextRequest) {
         s.is_root,
         n.in_reply_to,
         n.references
-      FROM \`viewpers.salesguard_alerts.alerts_v2_scored\` s
+      FROM ${ALERT_VIEW} s
       LEFT JOIN \`viewpers.salesguard_alerts.email_messages_normalized\` n
         ON n.message_id = s.message_id
       WHERE s.message_id = @message_id
@@ -35,7 +42,7 @@ export async function GET(request: NextRequest) {
       query,
       params: { message_id: messageId },
       useLegacySql: false,
-      maximumBytesBilled: '2000000000'
+      maximumBytesBilled: '200000000'
     })
 
     if (!rows || rows.length === 0) {

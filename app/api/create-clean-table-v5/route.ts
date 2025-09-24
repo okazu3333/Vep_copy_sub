@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🚀 転送サービス問題改善版クリーンテーブル作成開始')
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       GROUP BY thread_id, message_id, subject, \`from\`, improved_to, body, date, reply_level, is_root, source_file, improved_customer_email
     `
 
-    const result = await bigquery.query({
+    await bigquery.query({
       query: createTableQuery,
       useLegacySql: false,
       maximumBytesBilled: '1000000000'

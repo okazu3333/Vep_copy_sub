@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 ALT-363のメッセージ内容とFrom/To表示問題確認開始')
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
-const bigquery = new BigQuery()
+const _bigquery = new BigQuery()
 
 // 拡張キーワードパターン（感情分析付き）
 const ENHANCED_KEYWORD_PATTERNS = {
@@ -365,17 +365,16 @@ function calculateStatistics(analysisResults: any[]): any {
   return stats
 }
 
-async function updateAlertsTable(analysisResults: any[]): Promise<void> {
+async function updateAlertsTable(_analysisResults: any[]): Promise<void> {
   // ここでBigQueryテーブルの更新処理を実装
   // 現在はスキップ（必要に応じて実装）
   console.log('💾 テーブル更新は現在スキップされています')
 }
 
 // GET メソッドで統計情報を取得
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = 50
     
     console.log(`📊 感情分析統計情報取得: ${limit}件`)
 

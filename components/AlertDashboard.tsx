@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Alert, AlertResponse } from '@/types/alert'
+import { useState, useEffect, useCallback } from 'react'
+import { Alert } from '@/types'
 import { Badge } from '@/components/ui/badge'
 
 export default function AlertDashboard() {
@@ -23,7 +23,7 @@ export default function AlertDashboard() {
   })
 
   // アラート取得
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -37,21 +37,28 @@ export default function AlertDashboard() {
       const response = await fetch(`/api/alerts?${params}`)
       if (!response.ok) throw new Error('データ取得に失敗しました')
 
-      const data: AlertResponse = await response.json()
-      setAlerts(data.data)
-      setPagination(data.pagination)
+      const data = await response.json()
+      setAlerts(data.alerts || [])
+      setPagination(data.pagination || {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      })
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, filters.search, filters.status, filters.priority])
 
   // ステータス更新
-  const updateStatus = async (messageId: string, status: string) => {
+  const updateStatus = async (alertId: string, status: string) => {
     try {
-      const response = await fetch(`/api/alerts/${messageId}`, {
+      const response = await fetch(`/api/alerts/${alertId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -60,57 +67,65 @@ export default function AlertDashboard() {
       if (!response.ok) throw new Error('ステータス更新に失敗しました')
 
       // ローカル状態を更新
-      setAlerts(prev => prev.map(alert => 
-        alert.message_id === messageId 
-          ? { ...alert, status, status_updated_at: new Date().toISOString() }
+      setAlerts(prev => (prev || []).map(alert => 
+        alert.id === alertId 
+          ? { ...alert, status: status as any, updatedAt: new Date().toISOString() }
           : alert
       ))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ステータス更新に失敗しました')
+      console.error('Status update error:', err)
     }
   }
 
   useEffect(() => {
     fetchAlerts()
-  }, [pagination.page, filters])
+  }, [fetchAlerts])
 
-  if (loading) return <div className="flex justify-center items-center h-64">読み込み中...</div>
-  if (error) return <div className="text-red-600 p-4">エラー: {error}</div>
+  if (loading) return <div className="p-4">読み込み中...</div>
+  if (error) return <div className="p-4 text-red-600">エラー: {error}</div>
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">アラート管理ダッシュボード</h1>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">アラート一覧</h2>
       
       {/* フィルター */}
-      <div className="mb-6 space-y-4">
-        <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="検索..."
-            value={filters.search}
-            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="border rounded px-3 py-2"
-          />
-          <select
-            value={filters.priority}
-            onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-            className="border rounded px-3 py-2"
-          >
-            <option value="all">全優先度</option>
-            <option value="high">高</option>
-            <option value="medium">中</option>
-            <option value="low">低</option>
-          </select>
-        </div>
+      <div className="mb-4 flex gap-4">
+        <input
+          type="text"
+          placeholder="検索..."
+          value={filters.search}
+          onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+          className="border px-3 py-2 rounded"
+        />
+        <select
+          value={filters.status}
+          onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="all">すべてのステータス</option>
+          <option value="unhandled">未対応</option>
+          <option value="in_progress">対応中</option>
+          <option value="completed">完了</option>
+        </select>
+        <select
+          value={filters.priority}
+          onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="all">すべての優先度</option>
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+        </select>
       </div>
 
-      {/* アラートテーブル */}
+      {/* アラート表 */}
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border">
+        <table className="min-w-full border-collapse border">
           <thead>
-            <tr>
+            <tr className="bg-gray-50">
               <th className="border px-4 py-2">件名</th>
-              <th className="border px-4 py-2">送信者</th>
+              <th className="border px-4 py-2">顧客</th>
               <th className="border px-4 py-2">日時</th>
               <th className="border px-4 py-2">優先度</th>
               <th className="border px-4 py-2">ステータス</th>
@@ -118,62 +133,61 @@ export default function AlertDashboard() {
             </tr>
           </thead>
           <tbody>
-            {alerts.map((alert) => (
-              <tr key={alert.message_id}>
-                                       <td className="border px-4 py-2">
-                         <div className="max-w-xs truncate" title={alert.subject}>
-                           {alert.subject}
-                           {alert.phraseDetections && alert.phraseDetections.length > 0 && (
-                             <div className="mt-1">
-                               {alert.phraseDetections.map((detection: any, index: number) => (
-                                 <Badge 
-                                   key={index} 
-                                   variant={detection.priority === 'High' ? 'destructive' : 'secondary'}
-                                   className="text-xs mr-1 mb-1"
-                                   title={`${detection.category}: ${detection.phrase}`}
-                                 >
-                                   {detection.category}
-                                 </Badge>
-                               ))}
-                             </div>
-                           )}
-                         </div>
-                       </td>
+            {(alerts || []).map((alert) => (
+              <tr key={alert.id}>
                 <td className="border px-4 py-2">
-                  <div className="max-w-xs truncate" title={alert.from_address}>
-                    {alert.from_address}
+                  <div className="max-w-xs truncate" title={alert.subject}>
+                    {alert.subject}
+                    {alert.phrases && (
+                      <div className="mt-1">
+                        {alert.phrases.split(',').map((phrase: string, index: number) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary"
+                            className="text-xs mr-1 mb-1"
+                          >
+                            {phrase.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="border px-4 py-2">
-                  {new Date(alert.sent_timestamp).toLocaleString('ja-JP')}
+                  <div className="max-w-xs truncate" title={alert.customer}>
+                    {alert.customer}
+                  </div>
                 </td>
                 <td className="border px-4 py-2">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    alert.priority === 'high' ? 'bg-red-100 text-red-800' :
-                    alert.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {alert.priority}
-                  </span>
+                  {new Date(alert.datetime).toLocaleDateString('ja-JP')}
+                </td>
+                <td className="border px-4 py-2">
+                  <Badge variant={
+                    alert.severity === 'high' ? 'destructive' : 
+                    alert.severity === 'medium' ? 'default' : 'secondary'
+                  }>
+                    {alert.severity}
+                  </Badge>
+                </td>
+                <td className="border px-4 py-2">
+                  <Badge variant={
+                    alert.status === 'completed' ? 'default' : 
+                    alert.status === 'in_progress' ? 'secondary' : 'outline'
+                  }>
+                    {alert.status === 'unhandled' ? '未対応' :
+                     alert.status === 'in_progress' ? '対応中' : '完了'}
+                  </Badge>
                 </td>
                 <td className="border px-4 py-2">
                   <select
                     value={alert.status}
-                    onChange={(e) => updateStatus(alert.message_id, e.target.value)}
-                    className="border rounded px-2 py-1 text-sm"
+                    onChange={(e) => updateStatus(alert.id, e.target.value)}
+                    className="border px-2 py-1 rounded text-sm"
                   >
-                    <option value="未対応">未対応</option>
-                    <option value="対応中">対応中</option>
-                    <option value="完了">完了</option>
+                    <option value="unhandled">未対応</option>
+                    <option value="in_progress">対応中</option>
+                    <option value="completed">完了</option>
                   </select>
-                </td>
-                <td className="border px-4 py-2">
-                  <button
-                    onClick={() => {/* 詳細表示 */}}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    詳細
-                  </button>
                 </td>
               </tr>
             ))}
@@ -182,10 +196,9 @@ export default function AlertDashboard() {
       </div>
 
       {/* ページネーション */}
-      <div className="mt-6 flex justify-between items-center">
+      <div className="mt-4 flex justify-between items-center">
         <div>
-          全 {pagination.total} 件中 {(pagination.page - 1) * pagination.limit + 1} - 
-          {Math.min(pagination.page * pagination.limit, pagination.total)} 件
+          {pagination.total}件中 {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}件を表示
         </div>
         <div className="flex gap-2">
           <button

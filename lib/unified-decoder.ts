@@ -282,9 +282,7 @@ export class UnifiedDecoder {
     console.log(`🚀 大規模データセット処理開始: ${dataSource}`);
     
     try {
-      let processedCount = 0;
-      let totalProcessed = 0;
-      
+       
       // データソース別処理
       if (dataSource === 'bigquery') {
         const mod = await import('@google-cloud/bigquery');

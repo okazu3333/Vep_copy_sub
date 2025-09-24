@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/types';
-import { Clock, User, Building2, Hash, Gauge, MessagesSquare, Layers, Tag, TrendingDown, TrendingUp, Minus, Timer } from 'lucide-react';
+import { User, Building2, Hash, Gauge, MessagesSquare, Layers, Tag, TrendingDown, TrendingUp, Minus, Timer, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AlertCardProps {
@@ -35,6 +35,7 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
         return '不明';
     }
   };
+  
   const getStatusColor = (status: Alert['status']) => {
     switch (status) {
       case 'unhandled':
@@ -72,11 +73,7 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
     if (score > 0.3) return <TrendingUp className="h-3 w-3" />;
     return <Minus className="h-3 w-3" />;
   };
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-  };
-
+  
   const getSlaHours = (severity: 'A' | 'B' | 'C') => {
     if (severity === 'A') return 24;
     if (severity === 'B') return 48;
@@ -100,16 +97,22 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
   };
 
   const detectionScore = typeof alert.detection_score === 'number' ? alert.detection_score : undefined;
-
+  
+  // Check if there's any actual detection (phrases or segments)
+  const hasDetection = (alert.phrases && alert.phrases.length > 0) || 
+                      (alert.segments && (alert.segments.lose || alert.segments.rival || alert.segments.addreq || alert.segments.renewal));
+  
+  // Sync flag with detection - if no detection, show lower severity
+  const actualSeverity = hasDetection ? alert.severity : 'C';
   const phraseBadges = (alert.phrases || []).slice(0, 3);
 
   return (
-    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-gray-200 hover:border-l-blue-500" onClick={onClick}>
+    <Card data-testid="alert-card" className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-gray-200 hover:border-l-blue-500" onClick={onClick}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-2">
-            <Badge className={cn('text-xs font-bold shadow-sm', getSeverityColor(alert.severity))}>
-              {getSeverityLabel(alert.severity)}
+            <Badge className={cn('text-xs font-bold shadow-sm', getSeverityColor(actualSeverity))}>
+              {getSeverityLabel(actualSeverity)}
             </Badge>
             <Badge className={cn('text-xs font-medium', getStatusColor(alert.status))}>
               {getStatusText(alert.status)}
@@ -118,11 +121,17 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
           </div>
         </div>
         
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-900 line-clamp-2 text-lg leading-tight">
-            {alert.subject}
-          </h3>
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1 mr-4">
+            <h3 className="font-semibold text-gray-900 line-clamp-1 text-lg leading-tight mb-1">
+              {alert.subject}
+            </h3>
+            <div className="flex items-center text-sm text-gray-600 mb-1">
+              <Mail className="h-3 w-3 mr-1" />
+              <span className="line-clamp-1">{alert.email_subject || alert.subject}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {typeof alert.thread_count === 'number' && alert.thread_count > 1 && (
               <Badge variant="secondary" className="text-[11px] flex items-center bg-blue-50 text-blue-700 border border-blue-200">
                 <MessagesSquare className="h-3 w-3 mr-1" />同一スレ {alert.thread_count}
@@ -139,18 +148,14 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
+        <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
           <div className="flex items-center text-gray-600">
-            <Building2 className="mr-1 h-3 w-3" />
-            <span className="font-medium">{alert.company || 'unknown.co'}</span>
+            <User className="mr-1 h-3 w-3" />
+            <span className="font-medium">顧客: {alert.customer}</span>
           </div>
           <div className="flex items-center text-gray-600">
             <User className="mr-1 h-3 w-3" />
-            <span className="font-medium">{alert.customer}</span>
-          </div>
-          <div className="flex items-center text-gray-600">
-            <User className="mr-1 h-3 w-3" />
-            <span className="font-medium">{alert.assignee || '未割当'}</span>
+            <span className="font-medium">担当: {alert.assignee || '未割当'}</span>
           </div>
         </div>
 
@@ -161,6 +166,14 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
                 <Tag className="h-3 w-3 mr-1" />{p}
               </Badge>
             ))}
+          </div>
+        )}
+        
+        {!hasDetection && (
+          <div className="mb-2">
+            <Badge variant="secondary" className="text-[11px] bg-gray-50 text-gray-600 border border-gray-200">
+              検知なし
+            </Badge>
           </div>
         )}
         

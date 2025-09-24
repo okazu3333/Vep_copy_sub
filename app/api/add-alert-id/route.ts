@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // email_messagesテーブルにalert_idフィールドを追加
     const addColumnQuery = `
@@ -53,7 +53,7 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // 簡単なクエリでテーブル構造を確認
     const simpleQuery = `

@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -11,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Moon, Sun, User, LogOut, LayoutDashboard, Search } from "lucide-react"
+import { Bell, Moon, Sun, User, LogOut, Shield, Settings } from "lucide-react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 
@@ -19,28 +18,20 @@ export function Header() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <header className="bg-white/90 backdrop-blur border-b border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 px-6 py-3">
-      <div className="flex items-center gap-4">
-        {/* Brand */}
+    <header className="bg-white/95 backdrop-blur border-b border-gray-200 dark:bg-gray-800/95 dark:border-gray-700 px-6 py-3 sticky top-0 z-40">
+      <div className="flex items-center justify-between">
+        {/* Empty left side - logo moved to sidebar */}
         <div className="flex items-center gap-2">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-900 dark:text-white">
-            <LayoutDashboard className="h-5 w-5" />
-            <h2 className="text-base font-semibold leading-none">SalesGuard</h2>
-          </Link>
-        </div>
-
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-2xl">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="検索（件名・本文・顧客・担当者）" />
-          </div>
+          {/* Logo removed - now in sidebar */}
         </div>
 
         {/* Actions */}
-        <div className="ml-auto flex items-center space-x-2">
-          <Button variant="ghost" size="sm">
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-4 w-4" />
+            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
+              3
+            </span>
           </Button>
 
           <Button variant="ghost" size="sm" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -49,28 +40,30 @@ export function Header() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                  <AvatarFallback>田中</AvatarFallback>
+              <Button variant="ghost" size="sm">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src="/placeholder-user.jpg" />
+                  <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
+                    <User className="h-3 w-3" />
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">田中太郎</p>
-                  <p className="text-xs leading-none text-muted-foreground">tanaka@company.com</p>
-                </div>
-              </DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>アカウント</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
-                <span>プロフィール</span>
+                プロフィール
               </DropdownMenuItem>
               <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                設定
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>ログアウト</span>
+                ログアウト
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

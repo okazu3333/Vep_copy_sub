@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🏗️ NLP分析用テーブル作成開始...')
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 テーブル作成クエリ実行中...')
 
-    const [nlpResultsResult, segmentDistributionResult, analysisStatsResult] = await Promise.all([
+    await Promise.all([
       bigquery.query({
         query: createNlpResultsTableQuery,
         useLegacySql: false,

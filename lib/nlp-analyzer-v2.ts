@@ -1,4 +1,4 @@
-import { LanguageServiceClient, protos } from '@google-cloud/language'
+import { LanguageServiceClient } from '@google-cloud/language'
 import { BigQuery } from '@google-cloud/bigquery'
 import { TextDecoder } from './text-decoder'
 

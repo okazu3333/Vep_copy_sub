@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
     AlertTriangle,
-    BarChart3,
     Bell,
     ChevronLeft,
     ChevronRight,
     Database,
     LayoutDashboard,
     Settings,
-    Users
+    Users,
+    Shield
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -38,9 +38,27 @@ export function Sidebar() {
         collapsed ? "w-16" : "w-64",
       )}
     >
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        {!collapsed && <h1 className="text-sm font-semibold text-foreground">SalesGuard</h1>}
-        <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto">
+      {/* Header with SalesGuard logo - aligned with main header height */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 h-[73px]">
+        {!collapsed && (
+          <Link href="/dashboard" className="flex items-center gap-3 text-gray-900 dark:text-white hover:text-blue-600 transition-colors">
+            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold leading-none">SalesGuard</h1>
+              <span className="text-xs text-gray-500 dark:text-gray-400">リスク監視システム</span>
+            </div>
+          </Link>
+        )}
+        {collapsed && (
+          <Link href="/dashboard" className="flex items-center justify-center">
+            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+          </Link>
+        )}
+        <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
@@ -56,16 +74,14 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "group relative flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors border border-transparent",
+                    "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
                     isActive
-                      ? "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-200 dark:border-indigo-900"
-                      : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800",
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
                   )}
                 >
-                  <Icon className={cn("h-5 w-5 mr-3 flex-shrink-0",
-                    isActive ? "text-indigo-700 dark:text-indigo-300" : "text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-gray-100"
-                  )} />
-                  {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
                 </Link>
               </li>
             )

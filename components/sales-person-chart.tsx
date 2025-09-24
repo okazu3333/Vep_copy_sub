@@ -13,11 +13,10 @@ interface SalesPersonChartProps {
     previousResolved?: number
     previousPending?: number
   }>
-  period: string
   searchTerm?: string
 }
 
-export function SalesPersonChart({ data, period, searchTerm }: SalesPersonChartProps) {
+export function SalesPersonChart({ data, searchTerm }: SalesPersonChartProps) {
   // 検索条件でフィルターされたデータ
   const filteredData = searchTerm
     ? data.filter(

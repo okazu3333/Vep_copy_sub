@@ -3,7 +3,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // learn@メールアドレスを除外した新しいクリーンテーブルを作成
     const createUpdatedTableQuery = `
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       )
     `
 
-    const result = await bigquery.query({
+    await bigquery.query({
       query: createUpdatedTableQuery,
       useLegacySql: false,
       maximumBytesBilled: '1000000000'

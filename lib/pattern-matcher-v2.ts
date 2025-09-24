@@ -623,7 +623,7 @@ export class PatternMatcherV2 {
   private static evaluateBusinessImpact(
     pattern: DetectionPattern,
     confidence: number,
-    nlpResult: NLPAnalysisResult
+    _nlpResult: NLPAnalysisResult
   ): 'high' | 'medium' | 'low' {
     if (confidence >= 0.7 && pattern.businessImpact === 'high') {
       return 'high'

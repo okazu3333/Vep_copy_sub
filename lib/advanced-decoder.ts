@@ -200,7 +200,7 @@ export class AdvancedDecoder {
       }
       
       return result;
-    } catch (error) {
+    } catch {
       return text;
     }
   }
@@ -226,7 +226,7 @@ export class AdvancedDecoder {
       }
       
       return text;
-    } catch (error) {
+    } catch {
       return text;
     }
   }

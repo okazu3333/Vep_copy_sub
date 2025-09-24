@@ -24,7 +24,7 @@ export class JapaneseDecoder {
         if (decoded !== result && this.isValidJapanese(decoded)) {
           result = decoded;
         }
-      } catch (error) {
+      } catch {
         // 変換失敗時は次の方法を試行
         continue;
       }

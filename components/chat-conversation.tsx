@@ -22,7 +22,7 @@ interface ChatMessage {
 
 interface ChatConversationProps {
   messages: ChatMessage[]
-  onMessageClick?: (messageId: string) => void
+  onMessageClick?: (_id: string) => void
 }
 
 export function ChatConversation({ messages, onMessageClick }: ChatConversationProps) {
@@ -33,12 +33,10 @@ export function ChatConversation({ messages, onMessageClick }: ChatConversationP
 
   return (
     <div className="space-y-4 max-h-[600px] overflow-y-auto">
-      {sortedMessages.map((message, index) => (
+      {sortedMessages.map((message) => (
         <ChatMessageBubble
           key={message.id}
           message={message}
-          isFirst={index === 0}
-          isLast={index === sortedMessages.length - 1}
           onClick={() => onMessageClick?.(message.messageId)}
         />
       ))}
@@ -48,12 +46,10 @@ export function ChatConversation({ messages, onMessageClick }: ChatConversationP
 
 interface ChatMessageBubbleProps {
   message: ChatMessage
-  isFirst: boolean
-  isLast: boolean
   onClick?: () => void
 }
 
-function ChatMessageBubble({ message, isFirst, isLast, onClick }: ChatMessageBubbleProps) {
+function ChatMessageBubble({ message, onClick }: ChatMessageBubbleProps) {
   const isInternal = message.sender.isInternal
   const isReply = message.isReply
 

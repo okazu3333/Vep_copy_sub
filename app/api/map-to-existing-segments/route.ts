@@ -159,7 +159,6 @@ async function mapToExistingSegments(sentimentResults: any[]): Promise<any[]> {
         existing_segment_color: existingSegment.color,
         existing_segment_priority: existingSegment.priority,
         // マッピング理由
-        mapping_reason: existingSegment.reason,
         mapping_confidence: existingSegment.confidence,
         analysis_timestamp: new Date().toISOString()
       }
@@ -186,31 +185,27 @@ async function mapToExistingSegments(sentimentResults: any[]): Promise<any[]> {
 }
 
 function determineExistingSegment(result: any): any {
-  const sentiment = result.sentiment
-  const detectedCategories = result.detected_categories || []
+  const sentiment: string = result.sentiment
+  const mapping: Record<string, string> = (EXISTING_SEGMENT_MAPPING as any)[sentiment] || {}
   
   // 感情とカテゴリに基づいて既存セグメントを決定
-  let bestMatch = null
+  let bestMatch: any = null
   let highestConfidence = 0
-  let mappingReason = ''
-
-  // 感情別のマッピングルール
-  if (EXISTING_SEGMENT_MAPPING[sentiment]) {
-    for (const [category, segmentId] of Object.entries(EXISTING_SEGMENT_MAPPING[sentiment])) {
-      // 英語カテゴリ名を使用
-      if (result.detected_categories_english && result.detected_categories_english.includes(category)) {
-        const confidence = calculateConfidence(sentiment, category, result.priority_score)
-        if (confidence > highestConfidence) {
-          highestConfidence = confidence
-          bestMatch = {
-            id: segmentId,
-            name: EXISTING_SEGMENTS[segmentId].name,
-            description: EXISTING_SEGMENTS[segmentId].description,
-            color: EXISTING_SEGMENTS[segmentId].color,
-            priority: EXISTING_SEGMENTS[segmentId].priority,
-            reason: `${sentiment}感情 + ${category}カテゴリ → ${EXISTING_SEGMENTS[segmentId].name}`,
-            confidence: confidence
-          }
+  for (const [category, segmentId] of Object.entries(mapping)) {
+    // 英語カテゴリ名を使用
+    if (result.detected_categories_english && result.detected_categories_english.includes(category)) {
+      const confidence = calculateConfidence(sentiment, category, result.priority_score)
+      if (confidence > highestConfidence) {
+        highestConfidence = confidence
+        const seg = (EXISTING_SEGMENTS as any)[segmentId]
+        bestMatch = {
+          id: segmentId,
+          name: seg.name,
+          description: seg.description,
+          color: seg.color,
+          priority: seg.priority,
+          reason: `${sentiment}感情 + ${category}カテゴリ → ${seg.name}`,
+          confidence: confidence
         }
       }
     }
@@ -230,22 +225,6 @@ function determineExistingSegment(result: any): any {
   }
 
   return bestMatch
-}
-
-function normalizeCategoryName(category: string): string {
-  // 日本語カテゴリ名を英語に変換
-  const categoryMapping: { [key: string]: string } = {
-    'クレーム・苦情': 'customer_service',
-    '緊急対応': 'urgent',
-    'キャンセル・解約': 'business_risk',
-    '価格・料金': 'pricing',
-    '品質・品質問題': 'quality',
-    '競合・他社': 'competition',
-    '営業・提案': 'sales',
-    '感謝・満足': 'satisfaction'
-  }
-  
-  return categoryMapping[category] || category
 }
 
 function calculateConfidence(sentiment: string, category: string, priorityScore: number): number {
@@ -270,7 +249,7 @@ function calculateConfidence(sentiment: string, category: string, priorityScore:
 function calculateMappingStatistics(mappedResults: any[]): any {
   const stats = {
     total_alerts: mappedResults.length,
-    existing_segment_distribution: {},
+    existing_segment_distribution: {} as Record<string, number>,
     mapping_confidence: {
       high: 0,    // 0.8以上
       medium: 0,  // 0.5-0.8
@@ -287,7 +266,7 @@ function calculateMappingStatistics(mappedResults: any[]): any {
     }
 
     // 既存セグメント分布
-    const segmentId = result.existing_segment_id
+    const segmentId = result.existing_segment_id as string
     if (!stats.existing_segment_distribution[segmentId]) {
       stats.existing_segment_distribution[segmentId] = 0
     }

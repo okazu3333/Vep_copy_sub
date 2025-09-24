@@ -10,6 +10,7 @@ export interface User {
 export interface Alert {
   id: string;
   subject: string;
+  email_subject?: string;
   severity: 'A' | 'B' | 'C';
   sentiment_score: number;
   department: string;
@@ -22,8 +23,8 @@ export interface Alert {
   // 追加（オプション）: 会社名と検知スコア
   company?: string | null;
   detection_score?: number; // 0-100
-  // 追加（オプション）: 検知フレーズ
-  phrases?: string[];
+  // 追加（オプション）: 検知フレーズ - より柔軟な型定義
+  phrases?: string[] | string | null;
   // 取得用の付加情報（任意）
   threadId?: string | null;
   messageId?: string | null;

@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { BigQuery } from '@google-cloud/bigquery'
-
-const bigquery = new BigQuery()
 
 // キーワード定義
 const KEYWORD_PATTERNS = {
@@ -39,7 +36,7 @@ const KEYWORD_PATTERNS = {
   ]
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 現在のキーワード設定を返す
     return NextResponse.json({
@@ -77,9 +74,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (action === 'update_keywords') {
-      // キーワード設定の更新
-      // ここでBigQueryのテーブルを更新する処理を実装
-      
+      // キーワード設定の更新（実装時に使用）
       return NextResponse.json({
         success: true,
         message: 'キーワード設定が更新されました'

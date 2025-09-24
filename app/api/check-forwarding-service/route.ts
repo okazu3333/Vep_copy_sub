@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 転送サービス使用状況確認開始')
 

@@ -73,7 +73,7 @@ export class DatabasePool {
   /**
    * トランザクション実行
    */
-  async transaction<T>(callback: (client: any) => Promise<T>): Promise<T> {
+  async transaction<T>(callback: (_client: any) => Promise<T>): Promise<T> {
     const client = await this.getConnection()
     try {
       await client.query('BEGIN')

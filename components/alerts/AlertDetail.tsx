@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert } from '@/types';
-import { X, Clock, User, Building2, MessageCircle, TrendingUp, AlertTriangle, MoreHorizontal, Send, Gauge, Hash } from 'lucide-react';
+import { X, MessageCircle, TrendingUp, MoreHorizontal, Send, Hash, User, Building2, Mail, ArrowRight, ArrowLeft, Reply, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -21,7 +19,6 @@ interface AlertDetailProps {
 
 export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetailProps) {
   const [status, setStatus] = useState(alert.status);
-  const [comment, setComment] = useState('');
   const [loadingBodyIds, setLoadingBodyIds] = useState<Record<string, boolean>>({});
   const [bodyCache, setBodyCache] = useState<Record<string, string>>({});
 
@@ -31,14 +28,36 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
     'cm-group.co.jp','shoppers-eye.co.jp','d-and-m.co.jp','medi-l.com','metasite.co.jp','infidex.co.jp',
     'excrie.co.jp','alternaex.co.jp','cmg.traffics.jp','tokyogets.com','pathcrie.co.jp','reech.co.jp'
   ];
+  
   const extractDomain = (s: string): string | null => {
     if (!s) return null;
     const m = s.toLowerCase().match(/@([^>\s]+)>?$/);
     return m ? m[1] : null;
   };
+  
   const isInternal = (addr: string): boolean => {
     const d = extractDomain(addr);
     return !!d && INTERNAL_DOMAINS.includes(d);
+  };
+
+  // 担当者を自社ドメインアドレスから抽出
+  const getInternalAssignee = (): string => {
+    const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
+    const internalSenders = allEmails
+      .filter(email => isInternal(email.sender || ''))
+      .map(email => email.sender || '')
+      .filter(Boolean);
+    
+    // 最も頻繁に出現する内部アドレスを担当者とする
+    const senderCounts: Record<string, number> = {};
+    internalSenders.forEach(sender => {
+      senderCounts[sender] = (senderCounts[sender] || 0) + 1;
+    });
+    
+    const mostFrequentSender = Object.entries(senderCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0];
+    
+    return mostFrequentSender || alert.assignee || '未割当';
   };
 
   const getSeverityColor = (severity: 'A' | 'B' | 'C') => {
@@ -54,17 +73,6 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
     }
   };
 
-  const getSentimentColor = (sentiment: 'positive' | 'negative' | 'neutral') => {
-    switch (sentiment) {
-      case 'positive':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'negative':
-        return 'bg-red-50 border-red-200 text-red-800';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
-    }
-  };
-
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('ja-JP');
@@ -73,7 +81,7 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
   const handleStatusUpdate = () => {
     const prev = alert.status;
     alert.status = status as Alert['status'];
-    const t = toast.success('対応ステータスを更新しました', {
+    toast.success('対応ステータスを更新しました', {
       action: {
         label: '元に戻す',
         onClick: () => {
@@ -91,45 +99,91 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
 
   const detectionScore = typeof alert.detection_score === 'number' ? Math.round(alert.detection_score) : undefined;
 
-  // 2カラム表示用に仕分け（左=外部/クライアント、右=社内）
+  // メールを時系列順にソートし、リプライ階層を構築
   const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
-  const isInternalMessage = (sender: string, recipient: string) => {
-    if (sender) return isInternal(sender);
-    if (recipient) return isInternal(recipient); // フォールバック
-    return false;
-  };
-  const leftEmails = allEmails.filter(e => !isInternalMessage(e.sender, e.recipient));
-  const rightEmails = allEmails.filter(e => isInternalMessage(e.sender, e.recipient));
-
-  const toggleAllAccordions = () => {
-    ['thread-accordion-left', 'thread-accordion-right'].forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const details = el.querySelectorAll('button[aria-controls]');
-      details.forEach((btn) => (btn as HTMLButtonElement).click());
-    });
-  };
+  const sortedEmails = [...allEmails].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const loadBodyIfNeeded = async (messageKey: string, messageId?: string | null) => {
     if (!messageId || bodyCache[messageKey] || loadingBodyIds[messageKey]) return;
     setLoadingBodyIds(prev => ({ ...prev, [messageKey]: true }));
+    
     try {
-      const res = await fetch(`/api/alerts-threaded/message?message_id=${encodeURIComponent(messageId)}`, {
-        headers: { 'Authorization': `Basic ${btoa('cmgadmin:crossadmin')}` },
-      });
+      // Try to get email body from BigQuery directly
+      const directQuery = `/api/email-body?message_id=${encodeURIComponent(messageId)}`;
+      
+      const res = await fetch(directQuery);
       if (res.ok) {
         const data = await res.json();
-        const body = data?.message?.body_preview as string | undefined;
-        if (body) setBodyCache(prev => ({ ...prev, [messageKey]: body }));
+        if (data.success && data.body) {
+          setBodyCache(prev => ({ ...prev, [messageKey]: data.body }));
+          return;
+        }
       }
-    } catch {}
-    finally {
+      
+      // Fallback: Try multiple API endpoints
+      const endpoints = [
+        `/api/alerts-threaded/message?message_id=${encodeURIComponent(messageId)}`,
+        `/api/alerts/${alert.id}/message?message_id=${encodeURIComponent(messageId)}`,
+        `/api/alerts-bigquery?message_id=${encodeURIComponent(messageId)}`
+      ];
+      
+      let body = null;
+      
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint);
+          if (res.ok) {
+            const data = await res.json();
+            // Try multiple body field names
+            body = data?.message?.body || 
+                   data?.message?.body_preview || 
+                   data?.message?.content || 
+                   data?.message?.body_text ||
+                   data?.body || 
+                   data?.content ||
+                   data?.body_preview;
+            
+            if (body && body.trim()) {
+              break; // Found valid body content
+            }
+          }
+        } catch (endpointError) {
+          console.warn(`Failed to fetch from ${endpoint}:`, endpointError);
+          continue;
+        }
+      }
+      
+      if (body && body.trim()) {
+        setBodyCache(prev => ({ ...prev, [messageKey]: body }));
+      } else {
+        // Try to get body from the email object itself
+        const email = sortedEmails.find(e => e.id === messageId);
+        const fallbackBody = email?.body || 
+                           email?.ai_summary || 
+                           (email as any)?.body_preview ||
+                           (email as any)?.content;
+        
+        if (fallbackBody && fallbackBody.trim()) {
+          setBodyCache(prev => ({ ...prev, [messageKey]: fallbackBody }));
+        } else {
+          // Mark as unavailable but with a helpful message
+          setBodyCache(prev => ({ 
+            ...prev, 
+            [messageKey]: `件名: ${email?.subject || '不明'}\n\n※ メール本文の詳細情報は現在利用できません。\n※ システム管理者にお問い合わせください。` 
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load email body:', error);
+      // Provide a helpful error message
+      setBodyCache(prev => ({ 
+        ...prev, 
+        [messageKey]: 'メール本文の読み込みに失敗しました。\nネットワーク接続を確認してから再度お試しください。' 
+      }));
+    } finally {
       setLoadingBodyIds(prev => ({ ...prev, [messageKey]: false }));
     }
   };
-
-  const defaultLeft = leftEmails.length ? [`lmsg-0`] : [];
-  const defaultRight = rightEmails.length ? [`rmsg-0`] : [];
 
   // 検知ロジックの重み（UI表示用）
   const RULE_WEIGHTS: Record<string, number> = {
@@ -140,246 +194,275 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
     '不良': 1.3, '不具合': 1.3, '故障': 1.3,
     'まだですか': 1.1, '対応して': 1.1, '返事がない': 1.1,
   };
+  
   const riskPhrases: string[] = Array.isArray(alert.phrases) ? alert.phrases : [];
   const matched = riskPhrases.filter(p => RULE_WEIGHTS[p] !== undefined);
   const ruleScore = matched.reduce((acc, p) => acc + (RULE_WEIGHTS[p] || 0), 0);
   const computedScore = typeof detectionScore === 'number' ? detectionScore : Math.min(100, Math.round(ruleScore * 30));
 
   const firstEmailSubject = (allEmails[0] && allEmails[0].subject) ? allEmails[0].subject : undefined;
-
   const sentimentLabel = (alert as any).sentiment_label as string | null | undefined;
   const sentimentScore = (alert as any).sentiment_score as number | null | undefined;
+  const internalAssignee = getInternalAssignee();
+
+  // 検知スコアが0の場合の処理
+  const hasDetection = computedScore > 0;
+  const displaySeverity = hasDetection ? alert.severity : 'C';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-slate-800 text-white p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-slate-800 text-white p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">リスクアラート詳細分析</h2>
+            <h2 className="text-xl font-semibold text-white">アラート詳細</h2>
             <div className="flex items-center gap-2">
-              {!isWorkerView && (
-                <>
-                  <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={handleEscalation}>
-                    🚨 エスカレーション
-                  </Button>
-                  <Button size="sm" variant="secondary" onClick={handleStatusUpdate}>
-                    <Send className="h-4 w-4 mr-1" /> ステータス更新
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>📊 役員会資料に追加</DropdownMenuItem>
-                      <DropdownMenuItem>📝 タスク化（モック）</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              )}
-              <Button variant="ghost" size="sm" onClick={onClose}>
+              {/* Status Update Buttons */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-300">ステータス:</span>
+                <select 
+                  value={status} 
+                  onChange={(e) => setStatus(e.target.value as Alert['status'])}
+                  className="bg-white text-gray-900 px-3 py-1 rounded text-sm border"
+                >
+                  <option value="pending">未対応</option>
+                  <option value="in_progress">対応中</option>
+                  <option value="resolved">解決済み</option>
+                  <option value="closed">完了</option>
+                </select>
+                <Button size="sm" variant="secondary" onClick={handleStatusUpdate}>
+                  更新
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-slate-700">
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
         
-        <div className="p-6 space-y-6">
-          {/* Summary + Risk Cards on top */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Summary Card */}
-            <Card className="border-slate-200 bg-slate-50">
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span>アラート概要</span>
-                  <Badge className={cn('text-xs', getSeverityColor(alert.severity))}>
-                    {alert.severity === 'A' ? 'クリティカル' : alert.severity === 'B' ? '重要' : '注意'}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 text-sm space-y-2">
-                <div>
-                  <div className="text-xs text-slate-500">アラート件名</div>
-                  <div className="font-semibold text-slate-900 truncate">{alert.subject || '—'}</div>
-                </div>
-                {firstEmailSubject && firstEmailSubject !== alert.subject && (
-                  <div>
-                    <div className="text-xs text-slate-500">メール件名</div>
-                    <div className="text-slate-900 truncate">{firstEmailSubject}</div>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-xs text-slate-500">会社名</div>
-                    <div className="text-slate-900 font-medium truncate">{alert.company || 'unknown.co'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500">関係顧客</div>
-                    <div className="text-slate-900 font-medium truncate">{alert.customer}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-500">最終更新</div>
-                  <div className="text-slate-900">{formatDateTime(alert.updated_at)}</div>
-                </div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                  <Hash className="h-3 w-3" />{alert.id}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Risk Card */}
-            <Card className="border-purple-200 bg-purple-50">
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="text-base flex items-center">
-                  <TrendingUp className="mr-1 h-4 w-4 text-purple-500" />
-                  リスク指標（根拠付き）
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 space-y-3">
-                <div>
-                  <div className="flex items-center justify-between text-xs text-purple-700">
-                    <span>検知スコア</span>
-                    <span className="font-semibold text-purple-900">{computedScore}</span>
-                  </div>
-                  <div className="mt-1 h-2 w-full bg-purple-100 rounded">
-                    <div className="h-2 bg-purple-500 rounded" style={{ width: `${Math.max(0, Math.min(100, computedScore))}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-purple-700 mb-1">検知理由</div>
-                  {matched.length ? (
-                    <div className="flex flex-wrap gap-1">
-                      {matched.map((p, i) => (
-                        <Badge key={i} variant="secondary" className="text-[11px] py-0.5 px-2">{p}（{RULE_WEIGHTS[p]}）</Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-[12px] text-gray-700">{alert.ai_summary || '—'}</div>
-                  )}
-                </div>
-                <div className="text-[11px] text-gray-600">
-                  算定式: 合計重み {ruleScore.toFixed(1)} × 30 → 上限100（表示 {computedScore}）
-                </div>
-                {typeof sentimentScore === 'number' && (
-                  <div className="text-[12px] text-purple-800">
-                    感情: {sentimentLabel || 'neutral'}（{sentimentScore.toFixed(2)}）
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* メッセージヘッダはカード化に伴い簡略化 */}
-
-          <div className="grid grid-cols-1 gap-6">
-            {/* Main Content */}
-            <div className="space-y-6">
-              {/* Email Thread */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <MessageCircle className="mr-2 h-5 w-5 text-blue-500" />
-                    コミュニケーション履歴
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {/* Summary + Risk Cards on top */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Summary Card */}
+              <Card className="border-slate-200 bg-slate-50">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span>アラート概要</span>
+                    <Badge className={cn('text-xs', getSeverityColor(displaySeverity))}>
+                      {displaySeverity === 'A' ? 'クリティカル' : displaySeverity === 'B' ? '重要' : '注意'}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {allEmails && allEmails.length > 0 ? (
-                    <>
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">1リプライ単位・左右分離表示</div>
-                        <Button variant="outline" size="sm" onClick={toggleAllAccordions}>全て開閉</Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left: Client/External */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="secondary">クライアント</Badge>
-                          </div>
-                          <Accordion type="multiple" id="thread-accordion-left" className="space-y-2" defaultValue={defaultLeft}>
-                            {leftEmails.map((email, idx) => {
-                              const header = (
-                                <div className="w-full flex items-center justify-between">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <Badge variant="secondary">顧客 → 社内</Badge>
-                                    <span className="font-semibold text-gray-900 truncate max-w-[18rem]">{email.sender || 'Unknown'}</span>
-                                    <span className="text-gray-500">→</span>
-                                    <span className="font-semibold text-gray-900 truncate max-w-[18rem]">{email.recipient || 'Unknown'}</span>
-                                    {email.subject && <span className="text-gray-600 truncate max-w-[20rem]">｜{email.subject}</span>}
-                                  </div>
-                                  <span className="text-sm text-gray-500">{formatDateTime(email.timestamp)}</span>
-                                </div>
-                              );
-                              const bodyKey = email.id;
-                              const bodyLoaded = !!bodyCache[bodyKey];
-                              const loading = !!loadingBodyIds[bodyKey];
-                              return (
-                                <AccordionItem key={email.id} value={`lmsg-${idx}`} className="rounded-lg border shadow-sm bg-white border-gray-200">
-                                  <AccordionTrigger className="px-4" onClick={() => loadBodyIfNeeded(bodyKey, email.messageId)}>{header}</AccordionTrigger>
-                                  <AccordionContent className="px-4 pb-4">
-                                    <div className="text-xs text-gray-500 mb-2">{loading ? '本文を読み込み中…' : (bodyLoaded ? '本文を表示中' : 'プレビュー表示')}</div>
-                                    <div className="text-sm text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">{bodyLoaded ? bodyCache[bodyKey] : email.ai_summary}</div>
-                                    {typeof email.replyLevel === 'number' && (
-                                      <div className="mt-2 text-xs text-gray-500">返信レベル: {email.replyLevel}{email.inReplyTo ? `｜In-Reply-To: ${email.inReplyTo}` : ''}</div>
-                                    )}
-                                  </AccordionContent>
-                                </AccordionItem>
-                              );
-                            })}
-                          </Accordion>
-                        </div>
-
-                        {/* Right: Internal */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className="bg-blue-600">社内</Badge>
-                          </div>
-                          <Accordion type="multiple" id="thread-accordion-right" className="space-y-2" defaultValue={defaultRight}>
-                            {rightEmails.map((email, idx) => {
-                              const header = (
-                                <div className="w-full flex items-center justify-between">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <Badge className="bg-blue-600">社内 → 顧客</Badge>
-                                    <span className="font-semibold text-gray-900 truncate max-w-[18rem]">{email.sender || 'Unknown'}</span>
-                                    <span className="text-gray-500">→</span>
-                                    <span className="font-semibold text-gray-900 truncate max-w-[18rem]">{email.recipient || 'Unknown'}</span>
-                                    {email.subject && <span className="text-gray-600 truncate max-w-[20rem]">｜{email.subject}</span>}
-                                  </div>
-                                  <span className="text-sm text-gray-500">{formatDateTime(email.timestamp)}</span>
-                                </div>
-                              );
-                              const bodyKey = email.id;
-                              const bodyLoaded = !!bodyCache[bodyKey];
-                              const loading = !!loadingBodyIds[bodyKey];
-                              return (
-                                <AccordionItem key={email.id} value={`rmsg-${idx}`} className="rounded-lg border shadow-sm bg-blue-50 border-blue-200">
-                                  <AccordionTrigger className="px-4" onClick={() => loadBodyIfNeeded(bodyKey, email.messageId)}>{header}</AccordionTrigger>
-                                  <AccordionContent className="px-4 pb-4">
-                                    <div className="text-xs text-gray-500 mb-2">{loading ? '本文を読み込み中…' : (bodyLoaded ? '本文を表示中' : 'プレビュー表示')}</div>
-                                    <div className="text-sm text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">{bodyLoaded ? bodyCache[bodyKey] : email.ai_summary}</div>
-                                    {typeof email.replyLevel === 'number' && (
-                                      <div className="mt-2 text-xs text-gray-500">返信レベル: {email.replyLevel}{email.inReplyTo ? `｜In-Reply-To: ${email.inReplyTo}` : ''}</div>
-                                    )}
-                                  </AccordionContent>
-                                </AccordionItem>
-                              );
-                            })}
-                          </Accordion>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded p-4">
-                      コミュニケーション履歴が見つかりませんでした。時間をおいて再度お試しください。
+                <CardContent className="p-4 text-sm space-y-3">
+                  <div>
+                    <div className="text-xs text-slate-500 mb-1">アラート件名</div>
+                    <div className="font-semibold text-slate-900">{alert.subject || '—'}</div>
+                  </div>
+                  {firstEmailSubject && firstEmailSubject !== alert.subject && (
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">メール件名</div>
+                      <div className="text-slate-900">{firstEmailSubject}</div>
                     </div>
                   )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">顧客</div>
+                      <div className="text-slate-900 font-medium">{alert.customer || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">担当者</div>
+                      <div className="text-slate-900 font-medium">{internalAssignee}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Risk Indicator Card */}
+              <Card className={cn("border-red-200", hasDetection ? "bg-red-50" : "bg-gray-50")}>
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className={cn("text-base", hasDetection ? "text-red-800" : "text-gray-600")}>
+                    リスク指標
+                    {!hasDetection && (
+                      <Badge className="ml-2 bg-gray-100 text-gray-600">検知なし</Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 text-sm space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>検知スコア</div>
+                      <div className={cn("font-bold text-lg", hasDetection ? "text-red-800" : "text-gray-600")}>
+                        {computedScore}/100
+                      </div>
+                    </div>
+                    <div>
+                      <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>感情分析</div>
+                      <div className={cn("font-semibold", hasDetection ? "text-red-800" : "text-gray-600")}>
+                        {sentimentLabel || 'neutral'} ({sentimentScore?.toFixed(2) || '0.00'})
+                      </div>
+                    </div>
+                  </div>
+                  {matched.length > 0 ? (
+                    <div>
+                      <div className="text-xs text-red-600 mb-2">検知フレーズ</div>
+                      <div className="flex flex-wrap gap-1">
+                        {matched.map((phrase, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">
+                            {phrase} (×{RULE_WEIGHTS[phrase]})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">
+                      リスクフレーズが検出されませんでした
+                    </div>
+                  )}
+                  <div className={cn("text-xs", hasDetection ? "text-red-600" : "text-gray-500")}>
+                    計算式: Σ(フレーズ重み) × 30 = {ruleScore.toFixed(1)} × 30 = {computedScore}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Sidebar removed to give messages full width */}
+            {/* Communication History */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  コミュニケーション履歴
+                  <Badge variant="secondary" className="ml-2">
+                    {sortedEmails.length}件のメッセージ
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {sortedEmails.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    コミュニケーション履歴が見つかりませんでした
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Message Thread View - Each reply as separate unit */}
+                    {sortedEmails.map((email, index) => {
+                      const messageKey = `message-${index}`;
+                      const isLoading = loadingBodyIds[messageKey];
+                      const cachedBody = bodyCache[messageKey];
+                      const isInternalEmail = isInternal(email.sender || '');
+                      const replyLevel = email.replyLevel || 0;
+                      
+                      return (
+                        <div key={messageKey} className="border rounded-lg overflow-hidden shadow-sm">
+                          {/* Message Header */}
+                          <div className={cn(
+                            "px-4 py-3 border-b",
+                            isInternalEmail 
+                              ? "bg-green-50 border-green-200" 
+                              : "bg-blue-50 border-blue-200"
+                          )}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                {/* Message Number and Reply Level */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    #{index + 1}
+                                  </Badge>
+                                  {replyLevel > 0 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Reply className="h-3 w-3 mr-1" />
+                                      Re: {replyLevel}
+                                    </Badge>
+                                  )}
+                                  <Badge 
+                                    variant={isInternalEmail ? "default" : "secondary"}
+                                    className="text-xs"
+                                  >
+                                    {isInternalEmail ? "内部" : "顧客"}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Subject */}
+                                <div className={cn(
+                                  "font-medium text-sm mb-2",
+                                  isInternalEmail ? "text-green-900" : "text-blue-900"
+                                )}>
+                                  {email.subject || '件名なし'}
+                                </div>
+                                
+                                {/* From/To */}
+                                <div className={cn(
+                                  "text-sm",
+                                  isInternalEmail ? "text-green-700" : "text-blue-700"
+                                )}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                      {email.sender}
+                                    </span>
+                                    <ArrowRight className="h-3 w-3" />
+                                    <span>{email.recipient}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Timestamp */}
+                                <div className={cn(
+                                  "text-xs mt-1 flex items-center gap-1",
+                                  isInternalEmail ? "text-green-600" : "text-blue-600"
+                                )}>
+                                  <Clock className="h-3 w-3" />
+                                  {formatDateTime(email.timestamp)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Message Body */}
+                          <Accordion type="single" collapsible>
+                            <AccordionItem value={messageKey} className="border-none">
+                              <AccordionTrigger 
+                                className="px-4 py-3 hover:no-underline text-sm font-medium"
+                                onClick={() => loadBodyIfNeeded(messageKey, email.id)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <MessageCircle className="h-4 w-4" />
+                                  メール本文を表示
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                <div className="bg-gray-50 rounded-lg p-4 border">
+                                  {isLoading ? (
+                                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                                      本文を読み込み中…
+                                    </div>
+                                  ) : cachedBody ? (
+                                    <div className="text-gray-900 text-sm whitespace-pre-wrap leading-relaxed">
+                                      {cachedBody}
+                                    </div>
+                                  ) : (
+                                    <div className="text-gray-900 text-sm whitespace-pre-wrap leading-relaxed">
+                                      {/* Try multiple fallback sources for email content */}
+                                      {email.body || 
+                                       email.ai_summary || 
+                                       (email as any).body_preview ||
+                                       (email as any).content ||
+                                       email.subject ? `件名: ${email.subject}\n\n※ 本文の詳細は読み込めませんでした。\n※ システム管理者にお問い合わせください。` : 
+                                       '※ 本文が見つかりません'}
+                                    </div>
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

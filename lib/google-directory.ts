@@ -60,7 +60,7 @@ export class GoogleDirectoryService {
       const googleUser = await this.fetchGoogleDirectoryUser(email);
       return this.mapGoogleUserToProfile(googleUser, email);
       
-    } catch (error) {
+    } catch {
       console.error('ユーザープロフィール取得エラー:', error);
       return this.createFallbackProfile(email);
     }
@@ -86,7 +86,7 @@ export class GoogleDirectoryService {
       try {
         const internalProfiles = await this.batchFetchInternalUsers(internalEmails);
         Object.assign(profiles, internalProfiles);
-      } catch (error) {
+      } catch {
         console.error('内部ユーザー一括取得エラー:', error);
         // フォールバック
         for (const email of internalEmails) {
@@ -146,7 +146,7 @@ export class GoogleDirectoryService {
       try {
         const googleUser = await this.fetchGoogleDirectoryUser(email);
         profiles[email] = this.mapGoogleUserToProfile(googleUser, email);
-      } catch (error) {
+      } catch {
         profiles[email] = this.createFallbackProfile(email);
       }
     }

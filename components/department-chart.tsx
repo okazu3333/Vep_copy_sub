@@ -13,13 +13,12 @@ interface DepartmentChartProps {
     previousResolved?: number
     previousPending?: number
   }>
-  period: string
   chartType?: "bar" | "pie"
 }
 
 const COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6"]
 
-export function DepartmentChart({ data, period, chartType = "bar" }: DepartmentChartProps) {
+export function DepartmentChart({ data, chartType = "bar" }: DepartmentChartProps) {
   if (chartType === "pie") {
     const pieData = data.map((item, index) => ({
       name: item.name,

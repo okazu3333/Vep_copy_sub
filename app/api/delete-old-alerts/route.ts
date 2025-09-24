@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     // 削除前の確認
     const checkQuery = `
@@ -60,7 +60,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 // GETメソッドで削除前の確認のみ
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const checkQuery = `
       SELECT 

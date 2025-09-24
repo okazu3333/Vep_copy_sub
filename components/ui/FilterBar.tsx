@@ -19,155 +19,126 @@ export interface AlertsFilters {
 }
 
 interface FilterBarProps {
-  value: AlertsFilters;
-  onChange: (next: AlertsFilters) => void;
-  storageKey: string;
+  filters: AlertsFilters;
+  onFiltersChange: (_filters: AlertsFilters) => void;
+  hidePeriod?: boolean;
 }
 
-export function FilterBar({ value, onChange, storageKey }: FilterBarProps) {
-  const { views, save, remove } = useSavedViews<AlertsFilters>(storageKey);
-  const [isSaveOpen, setSaveOpen] = useState(false);
-  const [viewName, setViewName] = useState('');
-
+export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: FilterBarProps) {
   const tokens = useMemo(() => {
     const t: string[] = [];
-    if (value.department !== 'all') t.push(`部門:${value.department}`);
-    if (value.severity !== 'all') t.push(`レベル:${value.severity}`);
-    if (value.status !== 'all') t.push(`状態:${value.status}`);
-    if (value.period !== 'all') t.push(`期間:${value.period}`);
-    if (value.customer) t.push(`顧客:${value.customer}`);
-    if (value.search) t.push(`検索:${value.search}`);
+    if (filters.department !== 'all') t.push(`部門:${filters.department}`);
+    if (filters.severity !== 'all') t.push(`レベル:${filters.severity}`);
+    if (filters.status !== 'all') t.push(`状態:${filters.status}`);
+    if (!hidePeriod && filters.period !== 'all') t.push(`期間:${filters.period}`);
+    if (filters.customer) t.push(`顧客:${filters.customer}`);
+    if (filters.search) t.push(`検索:${filters.search}`);
     return t;
-  }, [value]);
+  }, [filters, hidePeriod]);
 
   const handleClear = () => {
-    onChange({ department: 'all', customer: '', severity: 'all', period: 'all', status: 'all', search: '' });
-  };
-
-  const handleSave = () => {
-    if (!viewName.trim()) return;
-    save(viewName.trim(), value);
-    setViewName('');
-    setSaveOpen(false);
+    onFiltersChange({ 
+      department: 'all', 
+      customer: '', 
+      severity: 'all', 
+      period: 'all', 
+      status: 'all', 
+      search: '' 
+    });
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-3">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+    <div className="space-y-4">
+      {/* Filter Controls */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <div>
-          <label className="text-xs text-gray-500">事業部門</label>
-          <Select value={value.department} onValueChange={(v) => onChange({ ...value, department: v })}>
+          <label className="text-xs text-gray-500">部門</label>
+          <Select value={filters.department} onValueChange={(v) => onFiltersChange({ ...filters, department: v })}>
             <SelectTrigger>
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="カスタマーサポート">カスタマーサポート</SelectItem>
               <SelectItem value="営業部">営業部</SelectItem>
-              <SelectItem value="開発部">開発部</SelectItem>
+              <SelectItem value="マーケティング部">マーケティング部</SelectItem>
+              <SelectItem value="カスタマーサクセス部">カスタマーサクセス部</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">リスクレベル</label>
-          <Select value={value.severity} onValueChange={(v) => onChange({ ...value, severity: v })}>
+          <label className="text-xs text-gray-500">重要度</label>
+          <Select value={filters.severity} onValueChange={(v) => onFiltersChange({ ...filters, severity: v })}>
             <SelectTrigger>
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="A">A</SelectItem>
-              <SelectItem value="B">B</SelectItem>
-              <SelectItem value="C">C</SelectItem>
+              <SelectItem value="A">A (高)</SelectItem>
+              <SelectItem value="B">B (中)</SelectItem>
+              <SelectItem value="C">C (低)</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">対応ステータス</label>
-          <Select value={value.status} onValueChange={(v) => onChange({ ...value, status: v })}>
+          <label className="text-xs text-gray-500">ステータス</label>
+          <Select value={filters.status} onValueChange={(v) => onFiltersChange({ ...filters, status: v })}>
             <SelectTrigger>
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="unhandled">要対応</SelectItem>
+              <SelectItem value="unhandled">未対応</SelectItem>
               <SelectItem value="in_progress">対応中</SelectItem>
               <SelectItem value="completed">解決済み</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label className="text-xs text-gray-500">分析期間</label>
-          <Select value={value.period} onValueChange={(v) => onChange({ ...value, period: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="すべて" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="today">今日</SelectItem>
-              <SelectItem value="week">今週</SelectItem>
-              <SelectItem value="month">今月</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {!hidePeriod && (
+          <div>
+            <label className="text-xs text-gray-500">分析期間</label>
+            <Select value={filters.period} onValueChange={(v) => onFiltersChange({ ...filters, period: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="すべて" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">すべて</SelectItem>
+                <SelectItem value="today">今日</SelectItem>
+                <SelectItem value="week">今週</SelectItem>
+                <SelectItem value="month">今月</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div>
           <label className="text-xs text-gray-500">顧客</label>
-          <Input value={value.customer} onChange={(e) => onChange({ ...value, customer: e.target.value })} placeholder="顧客名" />
+          <Input 
+            value={filters.customer} 
+            onChange={(e) => onFiltersChange({ ...filters, customer: e.target.value })} 
+            placeholder="顧客名" 
+          />
         </div>
         <div>
           <label className="text-xs text-gray-500">検索</label>
-          <Input value={value.search} onChange={(e) => onChange({ ...value, search: e.target.value })} placeholder="件名・キーワード" />
+          <Input 
+            value={filters.search} 
+            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })} 
+            placeholder="件名・キーワード" 
+          />
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          {tokens.length === 0 ? (
-            <span className="text-xs text-gray-400">フィルタは未設定です</span>
-          ) : (
-            tokens.map((t, i) => (
-              <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-700">
-                {t}
-              </Badge>
-            ))
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Dialog open={isSaveOpen} onOpenChange={setSaveOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Save className="h-4 w-4 mr-1" /> 保存
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>ビューを保存</DialogTitle>
-              </DialogHeader>
-              <Input placeholder="名前" value={viewName} onChange={(e) => setViewName(e.target.value)} />
-              <DialogFooter>
-                <Button onClick={handleSave}>保存</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Button size="sm" variant="ghost" onClick={handleClear}>クリア</Button>
-        </div>
-      </div>
-
-      {views.length > 0 && (
-        <div className="flex items-center gap-2 pt-2 border-t">
-          <Bookmark className="h-4 w-4 text-gray-400" />
-          <div className="flex flex-wrap gap-2">
-            {views.map(v => (
-              <div key={v.name} className="flex items-center gap-1">
-                <Button size="sm" variant="secondary" onClick={() => onChange(v.data)}>
-                  {v.name}
-                </Button>
-                <button className="text-gray-400 hover:text-red-600" onClick={() => remove(v.name)}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+      {/* Active Filters */}
+      {tokens.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-500">フィルター:</span>
+          {tokens.map((token, i) => (
+            <Badge key={i} variant="secondary" className="text-xs">
+              {token}
+            </Badge>
+          ))}
+          <Button variant="ghost" size="sm" onClick={handleClear}>
+            クリア
+          </Button>
         </div>
       )}
     </div>

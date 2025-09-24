@@ -3,7 +3,7 @@ import { dataDependencyAnalyzer } from '@/lib/data-dependency-analyzer'
 import { dbPool } from '@/lib/database-pool'
 import { bigQueryOptimizer } from '@/lib/bigquery-optimizer'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('💰 コスト分析API実行開始')
 
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, target } = body
+    const { action } = body
 
     console.log(`🚀 最適化アクション実行: ${action}`)
 

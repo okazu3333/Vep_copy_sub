@@ -1,328 +1,334 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
-const PROJECT_ID = 'viewpers'
-const ALERT_VIEW = '`viewpers.salesguard_alerts.alerts_v2_compat_unified`'
-
-interface AlertRow {
-  id: string | null
-  message_id: string | null
-  status: string | null
-  level: string | null
-  score: number | string | null
-  keyword: string | null
-  department: string | null
-  customer_email: string | null
-  datetime: string
-  person: string | null
-  description: string | null
-  messageBody?: string | null
-  thread_id: string | null
-  reply_level: number | string | null
-  is_root: boolean | null
-  source_file: string | null
-  company_domain: string | null
-  company_name: string | null
-  detection_score: number | string | null
-  assigned_user_id: string | null
-  assignee_name: string | null
-  customer_name_header: string | null
-  customer_display_name: string | null
-  sentiment_label: string | null
-  sentiment_score: number | null
-  negative_flag: boolean | null
-  composite_risk: number | string | null
-  seg_lose: boolean | null
-  seg_rival: boolean | null
-  seg_addreq: boolean | null
-  seg_renewal: boolean | null
-  thread_alert_count: number | string | null
-  id_alert_count: number | string | null
-}
-
-interface SegmentCountsRow {
-  lose: number | string | null
-  rival: number | string | null
-  addreq: number | string | null
-  renewal: number | string | null
-}
+const bigquery = new BigQuery({ projectId: 'viewpers' })
 
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url)
-    const searchParams = url.searchParams
-
-    const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1)
-    const rawLimit = parseInt(searchParams.get('limit') || '20', 10)
-    const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 20, 1), 100)
-    const search = (searchParams.get('search') || '').trim().toLowerCase()
-    const status = (searchParams.get('status') || '').trim()
-    const level = (searchParams.get('level') || '').trim()
-    const start = searchParams.get('start') || ''
-    const end = searchParams.get('end') || ''
-    const lightParam = (searchParams.get('light') || '1').toLowerCase()
-    const light = lightParam !== '0' && lightParam !== 'false'
-
-    if (!start || !end) {
-      return NextResponse.json(
-        { success: false, error: 'start and end query parameters are required and must be ISO-8601 strings' },
-        { status: 400 }
-      )
-    }
-
-    const startDate = new Date(start)
-    const endDate = new Date(end)
-    if (!Number.isFinite(startDate.valueOf()) || !Number.isFinite(endDate.valueOf())) {
-      return NextResponse.json(
-        { success: false, error: 'start and end must be valid ISO-8601 date strings' },
-        { status: 400 }
-      )
-    }
-    if (startDate >= endDate) {
-      return NextResponse.json(
-        { success: false, error: 'start must be earlier than end' },
-        { status: 400 }
-      )
-    }
+    const { searchParams } = new URL(request.url)
+    
+    // Parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const severity = searchParams.get('severity') || ''
+    const department = searchParams.get('department') || ''
+    const light = searchParams.get('light') === '1'
+    
+    // Remove date filtering since data is fixed to 2025/7/7-7/14
+    // const start = searchParams.get('start')
+    // const end = searchParams.get('end')
 
     const whereParts: string[] = [
-      'a.datetime >= TIMESTAMP(@start)',
-      'a.datetime < TIMESTAMP(@end)'
+      // Only show actual risk messages
+      'primary_risk_type != \'low\''
     ]
-    const params: Record<string, string | number | boolean> = { start, end }
+    const params: Record<string, string | number | boolean> = {}
 
     if (search.length) {
-      whereParts.push(`(\n        a.subject_norm LIKE @searchPrefix\n        OR a.person_norm LIKE @searchPrefix\n        OR a.customer_email_norm LIKE @searchPrefix\n        OR a.company_domain_norm LIKE @searchPrefix\n      )`)
-      params.searchPrefix = `${search}%`
+      whereParts.push(`(
+        subject LIKE @searchPrefix
+        OR \`from\` LIKE @searchPrefix
+        OR company_domain LIKE @searchPrefix
+      )`)
+      params.searchPrefix = `%${search}%`
     }
 
     if (status) {
-      whereParts.push('a.status = @status')
+      whereParts.push('primary_risk_type = @status')
       params.status = status
     }
 
-    if (level) {
-      whereParts.push('a.level = @level')
-      params.level = level
+    if (severity) {
+      whereParts.push('primary_risk_type = @severity')
+      params.severity = severity
     }
 
-    const whereClause = whereParts.join('\n        AND ')
+    if (department) {
+      whereParts.push('company_domain LIKE @department')
+      params.department = `%${department}%`
+    }
+
+    const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : ''
     const offset = (page - 1) * limit
 
-    const selectMessageBody = light ? 'NULL AS messageBody' : 'a.message_body AS messageBody'
-
-    const query = `
-      WITH Base AS (
+    // Build the main query with NLP-based segment detection
+    const baseQuery = `
+      WITH SegmentDetection AS (
         SELECT
-          a.id,
-          a.message_id,
-          a.status,
-          a.level,
-          a.score,
-          a.keyword,
-          a.department,
-          a.customer_email,
-          a.datetime,
-          a.person,
-          a.description,
-          ${selectMessageBody},
-          a.thread_id,
-          a.reply_level,
-          a.is_root,
-          a.source_file,
-          a.company_domain,
-          a.company_name,
-          a.detection_score,
-          a.assigned_user_id,
-          a.assignee_name,
-          a.customer_name_header,
-          a.customer_display_name,
-          a.sentiment_label,
-          a.sentiment_score,
-          a.negative_flag,
-          a.composite_risk,
-          a.seg_lose,
-          a.seg_rival,
-          a.seg_addreq,
-          a.seg_renewal
-        FROM ${ALERT_VIEW} a
-        WHERE ${whereClause}
-      ), ThreadCounts AS (
-        SELECT thread_id, COUNT(*) AS thread_alert_count
-        FROM Base
-        WHERE thread_id IS NOT NULL
-        GROUP BY thread_id
-      ), Grouped AS (
-        SELECT
-          b.id,
-          ANY_VALUE(b.person) AS person,
-          ANY_VALUE(b.description) AS description,
-          ANY_VALUE(b.messageBody) AS messageBody,
-          ANY_VALUE(b.level) AS level,
-          ANY_VALUE(b.status) AS status,
-          MAX(b.datetime) AS datetime,
-          ANY_VALUE(b.department) AS department,
-          ANY_VALUE(b.customer_email) AS customer_email,
-          (ARRAY_AGG(b.thread_id IGNORE NULLS LIMIT 1))[OFFSET(0)] AS thread_id,
-          ANY_VALUE(b.reply_level) AS reply_level,
-          ANY_VALUE(b.is_root) AS is_root,
-          ANY_VALUE(b.source_file) AS source_file,
-          ANY_VALUE(b.company_domain) AS company_domain,
-          ANY_VALUE(b.company_name) AS company_name,
-          ANY_VALUE(b.detection_score) AS detection_score,
-          ANY_VALUE(b.assigned_user_id) AS assigned_user_id,
-          ANY_VALUE(b.assignee_name) AS assignee_name,
-          ANY_VALUE(b.keyword) AS keyword,
-          ANY_VALUE(b.customer_name_header) AS customer_name_header,
-          ANY_VALUE(b.customer_display_name) AS customer_display_name,
-          COALESCE(ANY_VALUE(tc.thread_alert_count), 0) AS thread_alert_count,
-          COUNT(*) AS id_alert_count,
-          (ARRAY_AGG(b.message_id IGNORE NULLS LIMIT 1))[OFFSET(0)] AS message_id,
-          ANY_VALUE(b.sentiment_label) AS sentiment_label,
-          ANY_VALUE(b.sentiment_score) AS sentiment_score,
-          ANY_VALUE(b.negative_flag) AS negative_flag,
-          ANY_VALUE(b.composite_risk) AS composite_risk,
-          ANY_VALUE(b.seg_lose) AS seg_lose,
-          ANY_VALUE(b.seg_rival) AS seg_rival,
-          ANY_VALUE(b.seg_addreq) AS seg_addreq,
-          ANY_VALUE(b.seg_renewal) AS seg_renewal
-        FROM Base b
-        LEFT JOIN ThreadCounts tc ON tc.thread_id = b.thread_id
-        GROUP BY b.id
+          message_id,
+          thread_id,
+          subject,
+          subject as email_subject,
+          body_preview,
+          \`from\`,
+          \`to\`,
+          datetime,
+          company_domain,
+          direction,
+          primary_risk_type,
+          risk_keywords,
+          score,
+          sentiment_label,
+          sentiment_score,
+          negative_flag,
+          reply_level,
+          is_root,
+          source_uri,
+          
+          -- NLP + キーワードベースセグメント検知
+          -- 失注・解約セグメント (最優先)
+          CASE 
+            WHEN (
+              sentiment_label = 'negative' 
+              AND sentiment_score < -0.3
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約|キャンセル|中止|やめ|辞め|終了|停止|見送り|断念|解除|取り消し)')
+            ) OR (
+              negative_flag = true
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約|キャンセル|中止|やめ|辞め|終了|停止|見送り|断念)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約.*決定|キャンセル.*確定|契約.*終了|サービス.*停止)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_lose,
+          
+          -- 競合比較セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'negative')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(競合|他社|比較|検討|相見積|vs|対抗|選定|評価|ベンダー)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(他社.*提案|競合.*比較|価格.*比較|機能.*比較)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_rival,
+          
+          -- 追加要望セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'positive')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(追加|オプション|機能|要望|改善|拡張|カスタマイズ|新機能|アップグレード)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(機能.*追加|オプション.*検討|カスタマイズ.*希望)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_addreq,
+          
+          -- 更新・継続セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'positive')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(更新|継続|契約|延長|リニューアル|再契約|期限|満了)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(契約.*更新|サービス.*継続|ライセンス.*延長)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_renewal
+          
+        FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+        ${whereClause}
       )
       SELECT *
-      FROM Grouped
-      ORDER BY datetime DESC
-      LIMIT ${limit} OFFSET ${offset}
+      FROM SegmentDetection
+      ORDER BY score DESC, datetime DESC
+      LIMIT @limit OFFSET @offset
     `
 
-    const bigquery = new BigQuery({ projectId: PROJECT_ID })
-    try {
-      const [dryRunJob] = await bigquery.createQueryJob({
-        query,
-        params,
-        useLegacySql: false,
-        dryRun: true,
-      })
-      const dryRunStats = dryRunJob.metadata?.statistics as { query?: { totalBytesProcessed?: string } } | undefined
-      const estimatedBytes = dryRunStats?.query?.totalBytesProcessed
-      console.info('alerts query dry-run', { estimatedBytes, page, limit, light })
-    } catch (err) {
-      console.warn('alerts dry-run failed', err instanceof Error ? err.message : err)
-    }
+    params.limit = limit
+    params.offset = offset
 
-    const [rowsRaw] = await bigquery.query({ query, params, useLegacySql: false, maximumBytesBilled: '3000000000' })
-    const rows = rowsRaw as AlertRow[]
-
-    const alerts = rows.map((row) => {
-      const rawScore = typeof row.score === 'number' ? row.score : Number(row.score ?? 0)
-      const rawDetection = typeof row.detection_score === 'number' ? row.detection_score : Number(row.detection_score ?? 0)
-      const rawComposite = typeof row.composite_risk === 'number' ? row.composite_risk : Number(row.composite_risk ?? rawDetection)
-      const sentimentScore = typeof row.sentiment_score === 'number' ? row.sentiment_score : null
-      const threadCount = Number(row.thread_alert_count ?? 0)
-      const idCount = Number(row.id_alert_count ?? 0)
-      const phrases: string[] = typeof row.keyword === 'string' && row.keyword
-        ? row.keyword.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : []
-      const preferredCompany = row.company_name || row.company_domain || null
-      const preferredCustomer = row.customer_name_header || row.customer_display_name || row.person || ''
-      const assigneeName = row.assignee_name || row.assigned_user_id || undefined
-      return {
-        id: row.id,
-        person: row.person || 'Unknown',
-        description: row.description || 'No subject',
-        messageBody: row.messageBody || (light ? undefined : 'No content'),
-        level: row.level || 'medium',
-        status: row.status || 'new',
-        datetime: row.datetime,
-        department: row.department || 'general',
-        customerEmail: row.customer_email || '',
-        quality: rawScore ? rawScore / 100 : 0.5,
-        keyword: row.keyword || 'email',
-        score: rawScore ? rawScore / 100 : 0.5,
-        threadId: row.thread_id,
-        replyLevel: row.reply_level,
-        isRoot: row.is_root,
-        sourceFile: row.source_file,
-        company: preferredCompany,
-        detection_score: rawComposite || rawDetection,
-        assignee: assigneeName,
-        phrases,
-        customer_name: preferredCustomer,
-        thread_count: threadCount,
-        id_count: idCount,
-        message_id: row.message_id,
-        sentiment_label: row.sentiment_label || null,
-        sentiment_score: sentimentScore,
-        negative_flag: Boolean(row.negative_flag),
-        segments: {
-          lose: !!row.seg_lose,
-          rival: !!row.seg_rival,
-          addreq: !!row.seg_addreq,
-          renewal: !!row.seg_renewal,
-        },
-        thread_id: row.thread_id,
-        subject: row.description,
-        body: row.messageBody,
-        sender: row.person,
-      }
+    // Execute main query
+    const [rows] = await bigquery.query({
+      query: baseQuery,
+      params,
+      useLegacySql: false,
+      location: 'asia-northeast1',
+      maximumBytesBilled: '20000000000' // 20GB limit
     })
 
+    // Count query
     const countQuery = `
-      SELECT COUNT(*) AS total
-      FROM ${ALERT_VIEW} a
-      WHERE ${whereClause}
+      SELECT COUNT(*) as total
+      FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+      ${whereClause}
     `
+
+    const [countRows] = await bigquery.query({
+      query: countQuery,
+      params,
+      useLegacySql: false,
+      location: 'asia-northeast1',
+      maximumBytesBilled: '5000000000' // 5GB limit
+    })
+
+    const total = countRows[0]?.total || 0
+
+    // Segment counts query (全データに対して実行)
     const segmentCountQuery = `
-      SELECT
-        COUNTIF(a.seg_lose) AS lose,
-        COUNTIF(a.seg_rival) AS rival,
-        COUNTIF(a.seg_addreq) AS addreq,
-        COUNTIF(a.seg_renewal) AS renewal
-      FROM ${ALERT_VIEW} a
-      WHERE ${whereClause}
+      WITH SegmentDetection AS (
+        SELECT
+          -- 失注・解約セグメント
+          CASE 
+            WHEN (
+              sentiment_label = 'negative' 
+              AND sentiment_score < -0.3
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約|キャンセル|中止|やめ|辞め|終了|停止|見送り|断念|解除|取り消し)')
+            ) OR (
+              negative_flag = true
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約|キャンセル|中止|やめ|辞め|終了|停止|見送り|断念)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(解約.*決定|キャンセル.*確定|契約.*終了|サービス.*停止)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_lose,
+          
+          -- 競合比較セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'negative')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(競合|他社|比較|検討|相見積|vs|対抗|選定|評価|ベンダー)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(他社.*提案|競合.*比較|価格.*比較|機能.*比較)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_rival,
+          
+          -- 追加要望セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'positive')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(追加|オプション|機能|要望|改善|拡張|カスタマイズ|新機能|アップグレード)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(機能.*追加|オプション.*検討|カスタマイズ.*希望)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_addreq,
+          
+          -- 更新・継続セグメント
+          CASE 
+            WHEN (
+              sentiment_label IN ('neutral', 'positive')
+              AND REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(更新|継続|契約|延長|リニューアル|再契約|期限|満了)')
+            ) OR (
+              REGEXP_CONTAINS(LOWER(COALESCE(subject, '') || ' ' || COALESCE(body_preview, '')), 
+                r'(契約.*更新|サービス.*継続|ライセンス.*延長)')
+            )
+            THEN true 
+            ELSE false 
+          END as seg_renewal
+          
+        FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+        WHERE primary_risk_type != 'low'
+      )
+      SELECT 
+        COUNT(CASE WHEN seg_lose = true THEN 1 END) as lose_count,
+        COUNT(CASE WHEN seg_rival = true THEN 1 END) as rival_count,
+        COUNT(CASE WHEN seg_addreq = true THEN 1 END) as addreq_count,
+        COUNT(CASE WHEN seg_renewal = true THEN 1 END) as renewal_count
+      FROM SegmentDetection
     `
 
-    const [[countRows], [segmentRows]] = await Promise.all([
-      bigquery.query({ query: countQuery, params, useLegacySql: false, maximumBytesBilled: '1000000000' }),
-      bigquery.query({ query: segmentCountQuery, params, useLegacySql: false, maximumBytesBilled: '1000000000' })
-    ])
+    const [segmentCountRows] = await bigquery.query({
+      query: segmentCountQuery,
+      useLegacySql: false,
+      location: 'asia-northeast1',
+      maximumBytesBilled: '10000000000' // 10GB limit
+    })
 
-    const total = parseInt((countRows[0]?.total as string | number) || '0', 10)
-    const countsRow = (segmentRows[0] as SegmentCountsRow | undefined) || { lose: 0, rival: 0, addreq: 0, renewal: 0 }
-    const segmentCounts = {
-      lose: Number(countsRow.lose ?? 0),
-      rival: Number(countsRow.rival ?? 0),
-      addreq: Number(countsRow.addreq ?? 0),
-      renewal: Number(countsRow.renewal ?? 0),
-    }
-    const totalPages = Math.ceil(total / limit)
+    const segmentCounts = segmentCountRows[0] || {}
+
+    // Transform results
+    const alerts = rows.map((row: any) => ({
+      id: row.message_id || row.id,
+      messageId: row.message_id,
+      threadId: row.thread_id,
+      subject: row.subject || '',
+      customer: row.from || '',
+      customerEmail: row.from || '',
+      department: row.company_domain || '',
+      status: 'unhandled', // Default status
+      severity: row.primary_risk_type || 'medium',
+      phrases: row.risk_keywords || '',
+      datetime: row.datetime?.value || row.datetime,
+      updatedAt: row.datetime?.value || row.datetime,
+      aiSummary: row.body_preview || '',
+      companyDomain: row.company_domain || '',
+      replyLevel: row.reply_level || 0,
+      isRoot: row.is_root || false,
+      sourceFile: row.source_uri || '',
+      sentimentLabel: row.sentiment_label,
+      sentimentScore: row.sentiment_score,
+      negativeFlag: row.negative_flag,
+      segments: {
+        lose: row.seg_lose || false,
+        rival: row.seg_rival || false,
+        addreq: row.seg_addreq || false,
+        renewal: row.seg_renewal || false
+      }
+    }))
 
     const response = NextResponse.json({
       success: true,
       alerts,
-      pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
-      searchInfo: search ? { query: search, results: alerts.length } : null,
-      segmentCounts
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      },
+      segmentCounts: {
+        lose: segmentCounts.lose_count || 0,
+        rival: segmentCounts.rival_count || 0,
+        addreq: segmentCounts.addreq_count || 0,
+        renewal: segmentCounts.renewal_count || 0
+      }
     })
 
-    response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60')
-    response.headers.set('CDN-Cache-Control', 'public, max-age=60')
-    response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=60')
+    // Set cache headers
+    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300') // 5 minutes cache
+    response.headers.set('CDN-Cache-Control', 'public, max-age=300')
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=300')
+    
+    // Add diagnostic headers
+    response.headers.set('X-App-Instance', process.env.VERCEL_DEPLOYMENT_ID || 'local')
+    response.headers.set('X-BQ-Project', 'viewpers')
+    response.headers.set('X-Route', 'alerts-unified-nlp')
 
     return response
-  } catch (error) {
-    console.error('❌ BigQuery API Error:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString(),
-      searchParams: Object.fromEntries(request.nextUrl.searchParams),
-      requestUrl: request.url,
-    })
 
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error('Alerts API error:', { message: error?.message, url: request?.url })
+    return NextResponse.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch alerts',
+      alerts: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      segmentCounts: { lose: 0, rival: 0, addreq: 0, renewal: 0 }
+    }, { status: 500 })
   }
 }

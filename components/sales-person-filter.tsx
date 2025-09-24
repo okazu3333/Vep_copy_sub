@@ -18,7 +18,7 @@ interface SalesPersonFilterProps {
     resolved: number
     pending: number
   }>
-  onSearch: (searchTerm: string) => void
+  onSearch: (_searchTerm: string) => void
   searchTerm: string
 }
 

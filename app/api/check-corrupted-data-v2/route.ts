@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // より適切な文字化け判定条件でデータを確認
     const checkQuery = `

@@ -82,7 +82,7 @@ export class AdvancedEmailDecoder extends EmailDecoder {
             return decoded;
           }
         }
-      } catch (error) {
+      } catch {
         // デコードに失敗した場合は元の文字列を返す
       }
       return match;
@@ -100,7 +100,7 @@ export class AdvancedEmailDecoder extends EmailDecoder {
       if (text.includes('%')) {
         return decodeURIComponent(text);
       }
-    } catch (error) {
+    } catch {
       // デコードに失敗した場合は元の文字列を返す
     }
     

@@ -3,7 +3,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // 第1弾除外条件でフィルタリングされたクリーンテーブルを作成
     const createTableQuery = `
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       GROUP BY thread_id, message_id, subject, \`from\`, \`to\`, body, date, reply_level, is_root, source_file
     `
 
-    const result = await bigquery.query({
+    const _result = await bigquery.query({
       query: createTableQuery,
       useLegacySql: false,
       maximumBytesBilled: '1000000000'

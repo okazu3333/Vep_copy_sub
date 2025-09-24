@@ -7,12 +7,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { BarChart3, Download, FileText, Table, TrendingUp } from 'lucide-react'
+import { Download, FileText, Table } from 'lucide-react'
 
 interface ReportExportProps {
   period: string
   reportType: string
-  onExport: (format: 'pdf' | 'excel' | 'csv') => void
+  onExport: (_format: 'pdf' | 'excel' | 'csv') => void
   data?: any // レポートデータの型を柔軟に
 }
 
@@ -55,21 +55,6 @@ export function ReportExport({
 
     // レポートデータをコンソールに出力（デバッグ用）
     console.log('Report Data:', reportData)
-  }
-
-  const getReportIcon = () => {
-    switch (reportType) {
-      case 'overview':
-        return <BarChart3 className="h-4 w-4 mr-2" />
-      case 'detailed':
-        return <Table className="h-4 w-4 mr-2" />
-      case 'comparison':
-        return <TrendingUp className="h-4 w-4 mr-2" />
-      case 'trends':
-        return <TrendingUp className="h-4 w-4 mr-2" />
-      default:
-        return <FileText className="h-4 w-4 mr-2" />
-    }
   }
 
   return (

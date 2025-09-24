@@ -3,7 +3,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // クリーンテーブルにALT-xxx形式のアラートIDを追加
     const addAlertIdQuery = `

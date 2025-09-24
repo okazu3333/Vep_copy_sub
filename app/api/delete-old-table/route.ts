@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     // 古いクリーンテーブルを削除
     const deleteQuery = `
@@ -35,7 +35,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // テーブルの存在確認
     const checkQuery = `

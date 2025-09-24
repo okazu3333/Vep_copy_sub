@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 現在のテーブル構造を確認
     const checkQuery = `

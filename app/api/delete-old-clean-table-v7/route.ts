@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🗑️ 古いクリーンテーブル（v7）削除開始')
 
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       DROP TABLE IF EXISTS \`viewpers.salesguard_alerts.alerts_clean_v7\`
     `
 
-    const result1 = await bigquery.query({
+    await bigquery.query({
       query: deleteTableQuery,
       useLegacySql: false,
       maximumBytesBilled: '1000000000'
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       DROP TABLE IF EXISTS \`viewpers.salesguard_alerts.alerts_clean_v7_dedup\`
     `
 
-    const result2 = await bigquery.query({
+    await bigquery.query({
       query: deleteDedupTableQuery,
       useLegacySql: false,
       maximumBytesBilled: '1000000000'

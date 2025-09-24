@@ -58,7 +58,6 @@ export class TextDecoder {
       // Base64部分の抽出
       const base64Pattern = /\$B([^$]+)\$B/g
       let decodedText = text
-      let totalDecoded = 0
       let confidence = 0
 
       decodedText = decodedText.replace(base64Pattern, (match, base64Content) => {
@@ -66,7 +65,6 @@ export class TextDecoder {
           // Base64デコード
           const decoded = this.decodeBase64String(base64Content)
           if (decoded) {
-            totalDecoded += decoded.length
             confidence += 0.8 // Base64デコード成功
             return decoded
           }
@@ -89,7 +87,7 @@ export class TextDecoder {
         decodedLength: decodedText.length
       }
 
-    } catch (error) {
+    } catch {
       return {
         success: false,
         decodedText: text,
@@ -154,7 +152,7 @@ export class TextDecoder {
         decodedLength: decodedText.length
       }
 
-    } catch (error) {
+    } catch {
       return {
         success: false,
         decodedText: text,
@@ -193,7 +191,7 @@ export class TextDecoder {
           const char = String.fromCharCode(charCode)
           confidence += 0.1
           return char
-        } catch (error) {
+        } catch {
           return match
         }
       })
@@ -212,7 +210,7 @@ export class TextDecoder {
         decodedLength: decodedText.length
       }
 
-    } catch (error) {
+    } catch {
       return {
         success: false,
         decodedText: text,
@@ -256,7 +254,7 @@ export class TextDecoder {
               confidence += 0.1
               return String.fromCharCode(charCode)
             }
-          } catch (error) {
+          } catch {
             // 無視
           }
           return match
@@ -271,7 +269,7 @@ export class TextDecoder {
         decodedLength: decodedText.length
       }
 
-    } catch (error) {
+    } catch {
       return {
         success: false,
         decodedText: text,
@@ -297,16 +295,16 @@ export class TextDecoder {
       // Shift-JISとして解釈を試行
       try {
         return decoded.toString('binary')
-      } catch (error) {
+      } catch {
         // UTF-8として解釈を試行
         try {
           return decoded.toString('utf8')
-        } catch (error) {
+        } catch {
           // バイナリとして解釈
           return decoded.toString('binary')
         }
       }
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -318,11 +316,11 @@ export class TextDecoder {
         try {
           const charCode = parseInt(hex, 16)
           return String.fromCharCode(charCode)
-        } catch (error) {
+        } catch {
           return match
         }
       })
-    } catch (error) {
+    } catch {
       return null
     }
   }
