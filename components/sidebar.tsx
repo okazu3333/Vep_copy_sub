@@ -39,7 +39,7 @@ export function Sidebar() {
       )}
     >
       {/* Header with SalesGuard logo - aligned with main header height */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 h-[73px]">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 h-[73px] bg-white/95 backdrop-blur dark:bg-gray-800/95">
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-3 text-gray-900 dark:text-white hover:text-blue-600 transition-colors">
             <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">

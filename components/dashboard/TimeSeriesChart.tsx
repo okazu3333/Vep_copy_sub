@@ -26,41 +26,25 @@ interface TimeSeriesChartProps {
 
 export function TimeSeriesChart({ selectedPeriod, onPeriodChange }: TimeSeriesChartProps) {
   const router = useRouter();
-  const [data, setData] = useState<TimeSeriesData[]>([]);
+  const [data, setData] = useState<TimeSeriesData[]>([
+    { date: '7/7', totalAlerts: 12, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.1, uniqueCustomers: 8, uniqueSenders: 15, riskScore: 25 },
+    { date: '7/8', totalAlerts: 18, negativeAlerts: 5, negativeSentiment: 4, avgSentiment: -0.2, uniqueCustomers: 12, uniqueSenders: 22, riskScore: 35 },
+    { date: '7/9', totalAlerts: 15, negativeAlerts: 2, negativeSentiment: 3, avgSentiment: -0.05, uniqueCustomers: 10, uniqueSenders: 18, riskScore: 20 },
+    { date: '7/10', totalAlerts: 22, negativeAlerts: 7, negativeSentiment: 6, avgSentiment: -0.3, uniqueCustomers: 15, uniqueSenders: 28, riskScore: 45 },
+    { date: '7/11', totalAlerts: 19, negativeAlerts: 4, negativeSentiment: 5, avgSentiment: -0.15, uniqueCustomers: 13, uniqueSenders: 24, riskScore: 30 },
+    { date: '7/12', totalAlerts: 25, negativeAlerts: 8, negativeSentiment: 7, avgSentiment: -0.25, uniqueCustomers: 18, uniqueSenders: 32, riskScore: 50 },
+    { date: '7/13', totalAlerts: 16, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.08, uniqueCustomers: 11, uniqueSenders: 20, riskScore: 22 },
+    { date: '7/14', totalAlerts: 21, negativeAlerts: 6, negativeSentiment: 5, avgSentiment: -0.22, uniqueCustomers: 14, uniqueSenders: 26, riskScore: 40 }
+  ]);
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   const fetchTimeSeriesData = async () => {
     setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set('period', selectedPeriod);
-      
-      if (startDate) params.set('start_date', startDate);
-      if (endDate) params.set('end_date', endDate);
-
-      const response = await fetch(`/api/time-series?${params.toString()}`);
-      const result = await response.json();
-      
-      if (result.success) {
-        setData(result.data.timeSeries);
-      } else {
-        // Fallback to mock data
-        setData([
-          { date: '7/7', totalAlerts: 12, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.1, uniqueCustomers: 8, uniqueSenders: 15, riskScore: 25 },
-          { date: '7/8', totalAlerts: 18, negativeAlerts: 5, negativeSentiment: 4, avgSentiment: -0.2, uniqueCustomers: 12, uniqueSenders: 22, riskScore: 35 },
-          { date: '7/9', totalAlerts: 15, negativeAlerts: 2, negativeSentiment: 3, avgSentiment: -0.05, uniqueCustomers: 10, uniqueSenders: 18, riskScore: 20 },
-          { date: '7/10', totalAlerts: 22, negativeAlerts: 7, negativeSentiment: 6, avgSentiment: -0.3, uniqueCustomers: 15, uniqueSenders: 28, riskScore: 45 },
-          { date: '7/11', totalAlerts: 19, negativeAlerts: 4, negativeSentiment: 5, avgSentiment: -0.15, uniqueCustomers: 13, uniqueSenders: 24, riskScore: 30 },
-          { date: '7/12', totalAlerts: 25, negativeAlerts: 8, negativeSentiment: 7, avgSentiment: -0.25, uniqueCustomers: 18, uniqueSenders: 32, riskScore: 50 },
-          { date: '7/13', totalAlerts: 16, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.08, uniqueCustomers: 11, uniqueSenders: 20, riskScore: 22 },
-          { date: '7/14', totalAlerts: 21, negativeAlerts: 6, negativeSentiment: 5, avgSentiment: -0.22, uniqueCustomers: 14, uniqueSenders: 26, riskScore: 40 }
-        ]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch time series data:', error);
-      // Use fallback data
+    
+    // Always use dummy data for demo purposes
+    setTimeout(() => {
       setData([
         { date: '7/7', totalAlerts: 12, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.1, uniqueCustomers: 8, uniqueSenders: 15, riskScore: 25 },
         { date: '7/8', totalAlerts: 18, negativeAlerts: 5, negativeSentiment: 4, avgSentiment: -0.2, uniqueCustomers: 12, uniqueSenders: 22, riskScore: 35 },
@@ -71,9 +55,8 @@ export function TimeSeriesChart({ selectedPeriod, onPeriodChange }: TimeSeriesCh
         { date: '7/13', totalAlerts: 16, negativeAlerts: 3, negativeSentiment: 2, avgSentiment: -0.08, uniqueCustomers: 11, uniqueSenders: 20, riskScore: 22 },
         { date: '7/14', totalAlerts: 21, negativeAlerts: 6, negativeSentiment: 5, avgSentiment: -0.22, uniqueCustomers: 14, uniqueSenders: 26, riskScore: 40 }
       ]);
-    } finally {
       setLoading(false);
-    }
+    }, 500); // Simulate loading time
   };
 
   useEffect(() => {
@@ -92,55 +75,49 @@ export function TimeSeriesChart({ selectedPeriod, onPeriodChange }: TimeSeriesCh
 
   return (
     <div className="space-y-4">
-      {/* Chart Controls */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-3">
-              {/* Period Selection */}
-              <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">週次</SelectItem>
-                  <SelectItem value="month">月次</SelectItem>
-                  <SelectItem value="quarter">四半期</SelectItem>
-                  <SelectItem value="year">年次</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filter Controls Only */}
+      <div className="flex items-center justify-end gap-3 p-4">
+        {/* Period Selection */}
+        <Select value={selectedPeriod} onValueChange={onPeriodChange}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">週次</SelectItem>
+            <SelectItem value="month">月次</SelectItem>
+            <SelectItem value="quarter">四半期</SelectItem>
+            <SelectItem value="year">年次</SelectItem>
+          </SelectContent>
+        </Select>
 
-              {/* Date Range Inputs */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
-                  placeholder="開始日"
-                />
-                <span className="text-gray-500">-</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
-                  placeholder="終了日"
-                />
-              </div>
+        {/* Date Range Inputs */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-2 border rounded-md text-sm"
+            placeholder="開始日"
+          />
+          <span className="text-gray-500">-</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-2 border rounded-md text-sm"
+            placeholder="終了日"
+          />
+        </div>
 
-              <Button variant="outline" size="sm" onClick={clearDateRange}>
-                クリア
-              </Button>
+        <Button variant="outline" size="sm" onClick={clearDateRange}>
+          クリア
+        </Button>
 
-              <Button variant="outline" size="sm" onClick={fetchTimeSeriesData} disabled={loading}>
-                <Filter className="h-4 w-4 mr-1" />
-                {loading ? '読込中...' : '更新'}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+        <Button variant="outline" size="sm" onClick={fetchTimeSeriesData} disabled={loading}>
+          <Filter className="h-4 w-4 mr-1" />
+          {loading ? '読込中...' : '更新'}
+        </Button>
+      </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

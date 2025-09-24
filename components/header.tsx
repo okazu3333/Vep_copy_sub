@@ -18,8 +18,8 @@ export function Header() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <header className="bg-white/95 backdrop-blur border-b border-gray-200 dark:bg-gray-800/95 dark:border-gray-700 px-6 py-3 sticky top-0 z-40">
-      <div className="flex items-center justify-between">
+    <header className="bg-white/95 backdrop-blur border-b border-gray-200 dark:bg-gray-800/95 dark:border-gray-700 px-6 py-4 sticky top-0 z-40 h-[73px]">
+      <div className="flex items-center justify-between h-full">
         {/* Empty left side - logo moved to sidebar */}
         <div className="flex items-center gap-2">
           {/* Logo removed - now in sidebar */}

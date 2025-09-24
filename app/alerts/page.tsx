@@ -185,7 +185,7 @@ const extractAssigneeEmail = (alert: any): string => {
       }, {});
       
       const mostFrequent = Object.entries(senderCounts)
-        .sort(([,a], [,b]) => b - a)[0];
+        .sort(([,a], [,b]) => (b as number) - (a as number))[0];
       
       return mostFrequent[0];
     }
@@ -341,13 +341,22 @@ export default function AlertsPage() {
         return alert;
       });
       setAlerts(mapped);
+      
+      // Calculate filtered count for pagination
+      const filteredMapped = mapped.filter(alert => {
+        const riskScore = calculateRiskScore(alert);
+        return riskScore >= 30; // Only high-risk alerts
+      });
+      
       const pg = data?.pagination;
       if (pg) {
-        setTotal(Number(pg.total || 0));
-        setTotalPages(Number(pg.totalPages || 1));
+        // Use filtered count instead of raw total
+        const filteredTotal = Math.ceil(filteredMapped.length * (Number(pg.total || 0) / Math.max(mapped.length, 1)));
+        setTotal(filteredTotal);
+        setTotalPages(Math.ceil(filteredTotal / 20));
       } else {
-        setTotal(mapped.length);
-        setTotalPages(1);
+        setTotal(filteredMapped.length);
+        setTotalPages(Math.ceil(filteredMapped.length / 20));
       }
       if (data?.segmentCounts) {
         setSegmentCounts({
@@ -388,12 +397,14 @@ export default function AlertsPage() {
     let filtered = alerts.filter(alert => {
       const riskScore = calculateRiskScore(alert);
       
+      // Only show high-risk alerts (score >= 30) - this is the key filter
+      if (riskScore < 30) return false;
+      
       // Apply search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch = 
           alert.customer?.toLowerCase().includes(query) ||
-          alert.description?.toLowerCase().includes(query) ||
           alert.subject?.toLowerCase().includes(query) ||
           alert.id?.toLowerCase().includes(query);
         if (!matchesSearch) return false;
@@ -402,11 +413,10 @@ export default function AlertsPage() {
       return true;
     });
 
-    // Apply segment filter - only for high-risk alerts (score >= 30)
+    // Apply segment filter - only for high-risk alerts that are already filtered above
     if (segmentFilter) {
       filtered = filtered.filter(alert => {
-        const riskScore = calculateRiskScore(alert);
-        return riskScore >= 30 && alert.segments?.[segmentFilter];
+        return alert.segments?.[segmentFilter];
       });
     }
 
@@ -416,7 +426,8 @@ export default function AlertsPage() {
   // Calculate segment counts - total counts across all alerts, not just current page
   const calculateTotalSegmentCounts = useCallback(async () => {
     try {
-      const resp = await fetch('/api/alerts?page=1&limit=1000'); // Get all alerts for counting
+      // Use a dedicated API call to get consistent segment counts
+      const resp = await fetch('/api/alerts?segment_counts_only=true&limit=10000'); 
       const json = await resp.json();
       
       if (json?.success && json.alerts) {
@@ -424,7 +435,7 @@ export default function AlertsPage() {
         
         json.alerts.forEach((alert: Alert) => {
           const riskScore = calculateRiskScore(alert);
-          // Only count segments for high-risk alerts (score >= 30)
+          // Only count segments for alerts that are detected AND classified into segments
           if (riskScore >= 30 && alert.segments) {
             if (alert.segments.lose) counts.lose++;
             if (alert.segments.rival) counts.rival++;
@@ -437,12 +448,15 @@ export default function AlertsPage() {
       }
     } catch (error) {
       console.error('Failed to calculate segment counts:', error);
+      // Set fallback counts to prevent inconsistency
+      setSegmentCounts({ lose: 0, rival: 0, addreq: 0, renewal: 0 });
     }
   }, []);
 
+  // Only calculate segment counts once when component mounts
   useEffect(() => {
     calculateTotalSegmentCounts();
-  }, [calculateTotalSegmentCounts]);
+  }, []); // Remove dependency to prevent recalculation
 
   // セグメント表示は高リスクのもののみ
   const highRiskAlerts = useMemo(() => {

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockKPI, mockTimeSeriesData } from '@/lib/mock-data';
-import { FileDown, FileText, TrendingUp, Users, AlertTriangle, Building, Target, DollarSign, Clock, Calendar, TrendingDown, BarChart3 } from 'lucide-react';
+import { FileDown, FileText, TrendingUp, Users, AlertTriangle, Building, Target, DollarSign, Clock, TrendingDown, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ReportData {
@@ -322,20 +322,6 @@ ${mockCustomerRiskData.riskDistribution.map((risk, index) =>
           <p className="text-gray-600 mt-2">経営層向け重要指標とビジネスインパクト分析</p>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">週次</SelectItem>
-                <SelectItem value="month">月次</SelectItem>
-                <SelectItem value="quarter">四半期</SelectItem>
-                <SelectItem value="year">年次</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <Button onClick={handleExportPDF} variant="outline">
             <FileText className="mr-2 h-4 w-4" />
             PDF出力
