@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/types';
 import { X, MessageCircle, TrendingUp, MoreHorizontal, Send, Hash, User, Building2, Mail, ArrowRight, ArrowLeft, Reply, Clock } from 'lucide-react';
+import { HighlightText } from '@/components/ui/HighlightText';
+import { DetectionReasons } from '@/components/ui/DetectionReasons';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -98,6 +100,9 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
   };
 
   const detectionScore = typeof alert.detection_score === 'number' ? Math.round(alert.detection_score) : undefined;
+  const urgencyScore = typeof alert.urgencyScore === 'number' ? Math.round(alert.urgencyScore) : undefined;
+  const apiDetectionReasons = alert.detectionReasons || [];
+  const apiHighlightKeywords = alert.highlightKeywords || [];
 
   // メールを時系列順にソートし、リプライ階層を構築
   const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
@@ -259,7 +264,12 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                 <CardContent className="p-4 text-sm space-y-3">
                   <div>
                     <div className="text-xs text-slate-500 mb-1">アラート件名</div>
-                    <div className="font-semibold text-slate-900">{alert.subject || '—'}</div>
+                    <div className="font-semibold text-slate-900">
+                      <HighlightText 
+                        text={alert.subject || '—'} 
+                        keywords={alert.highlightKeywords || []}
+                      />
+                    </div>
                   </div>
                   {firstEmailSubject && firstEmailSubject !== alert.subject && (
                     <div>
@@ -290,7 +300,8 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                     )}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 text-sm space-y-3">
+                <CardContent className="p-4 text-sm space-y-4">
+                  {/* スコア表示 */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>検知スコア</div>
@@ -305,25 +316,105 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                       </div>
                     </div>
                   </div>
-                  {matched.length > 0 ? (
+
+                  {/* 検知理由の説明 */}
+                  <div className={cn("p-3 rounded-lg border", hasDetection ? "bg-red-25 border-red-200" : "bg-gray-25 border-gray-200")}>
+                    <div className={cn("text-xs font-medium mb-2", hasDetection ? "text-red-700" : "text-gray-600")}>
+                      なぜこのスコアになったのか
+                    </div>
+                    <div className={cn("text-sm leading-relaxed", hasDetection ? "text-red-800" : "text-gray-700")}>
+                      {hasDetection ? (
+                        <>
+                          このアラートは<span className="font-semibold text-red-900">リスクレベル{urgencyScore || computedScore}点</span>と判定されました。
+                          {apiDetectionReasons.length > 0 && (
+                            <>
+                              システムが「<span className="font-semibold">{apiDetectionReasons.join('」「')}</span>」を検知し、
+                            </>
+                          )}
+                          {apiHighlightKeywords.length > 0 && (
+                            <>
+                              メール内容から「<span className="font-semibold">{apiHighlightKeywords.join('」「')}</span>」などの
+                              <span className="font-semibold text-red-900">注意が必要なキーワード</span>が検出されています。
+                            </>
+                          )}
+                          {sentimentScore && sentimentScore < -0.3 && (
+                            <>
+                              また、感情分析により<span className="font-semibold text-red-900">ネガティブな感情</span>
+                              （スコア: {sentimentScore.toFixed(2)}）が検出されており、
+                            </>
+                          )}
+                          {(urgencyScore || computedScore) >= 80 ? (
+                            <span className="font-semibold text-red-900">緊急対応が必要</span>
+                          ) : (urgencyScore || computedScore) >= 50 ? (
+                            <span className="font-semibold text-orange-700">早急な対応が推奨</span>
+                          ) : (urgencyScore || computedScore) >= 30 ? (
+                            <span className="font-semibold text-yellow-700">注意深い対応が必要</span>
+                          ) : (
+                            <span className="font-semibold text-blue-700">通常対応で問題なし</span>
+                          )}
+                          な状況と判断されます。
+                        </>
+                      ) : (
+                        <>
+                          このメールは<span className="font-semibold text-gray-700">通常のコミュニケーション</span>と判定されました。
+                          リスクを示すキーワードや強いネガティブ感情は検出されていないため、
+                          <span className="font-semibold text-green-700">標準的な対応</span>で問題ありません。
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 新しいAPIベースの検知理由表示 */}
+                  {apiDetectionReasons.length > 0 && (
+                    <DetectionReasons 
+                      reasons={apiDetectionReasons} 
+                      score={urgencyScore || computedScore}
+                    />
+                  )}
+
+                  {/* 従来の検知フレーズ詳細（フォールバック） */}
+                  {matched.length > 0 && apiDetectionReasons.length === 0 && (
                     <div>
-                      <div className="text-xs text-red-600 mb-2">検知フレーズ</div>
+                      <div className="text-xs text-red-600 mb-2">検知されたリスクキーワード</div>
                       <div className="flex flex-wrap gap-1">
                         {matched.map((phrase, i) => (
                           <Badge key={i} variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">
-                            {phrase} (×{RULE_WEIGHTS[phrase]})
+                            {phrase} (重要度×{RULE_WEIGHTS[phrase]})
                           </Badge>
                         ))}
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-xs text-gray-500">
-                      リスクフレーズが検出されませんでした
+                  )}
+
+                  {/* 対応推奨アクション */}
+                  {hasDetection && (
+                    <div className={cn("p-3 rounded-lg border-l-4", 
+                      (urgencyScore || computedScore) >= 80 ? "bg-red-50 border-red-400" :
+                      (urgencyScore || computedScore) >= 50 ? "bg-orange-50 border-orange-400" :
+                      "bg-yellow-50 border-yellow-400"
+                    )}>
+                      <div className={cn("text-xs font-medium mb-1",
+                        (urgencyScore || computedScore) >= 80 ? "text-red-700" :
+                        (urgencyScore || computedScore) >= 50 ? "text-orange-700" :
+                        "text-yellow-700"
+                      )}>
+                        推奨アクション
+                      </div>
+                      <div className={cn("text-sm",
+                        (urgencyScore || computedScore) >= 80 ? "text-red-800" :
+                        (urgencyScore || computedScore) >= 50 ? "text-orange-800" :
+                        "text-yellow-800"
+                      )}>
+                        {(urgencyScore || computedScore) >= 80 ? (
+                          "即座に顧客に連絡を取り、問題の詳細を確認してください。必要に応じて上司やチームリーダーに報告し、迅速な解決策を検討してください。"
+                        ) : (urgencyScore || computedScore) >= 50 ? (
+                          "24時間以内に顧客に連絡を取り、状況を確認してください。問題が深刻化する前に適切な対応を行うことが重要です。"
+                        ) : (
+                          "通常の業務時間内に対応してください。顧客の要望や懸念を丁寧に聞き取り、適切なサポートを提供してください。"
+                        )}
+                      </div>
                     </div>
                   )}
-                  <div className={cn("text-xs", hasDetection ? "text-red-600" : "text-gray-500")}>
-                    計算式: Σ(フレーズ重み) × 30 = {ruleScore.toFixed(1)} × 30 = {computedScore}
-                  </div>
                 </CardContent>
               </Card>
             </div>

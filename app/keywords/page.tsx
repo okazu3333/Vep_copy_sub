@@ -20,35 +20,95 @@ import { Textarea } from "@/components/ui/textarea"
 import { Edit, Plus, CheckCircle, XCircle, Clock } from "lucide-react"
 import { useState } from "react"
 
-// 検知パターンセグメント定義
+// 検知パターンセグメント定義（アラート一覧と統一）
 const segments = [
   {
-    id: "complaint-urgent",
-    name: "クレーム・苦情系",
-    description: "顧客からの強い不満や苦情の検出",
+    id: "urgent_response",
+    name: "緊急対応",
+    description: "即座に対応が必要な緊急アラート（解約・キャンセル・クレーム等）",
     color: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200",
     scenarios: [
       {
-        name: "クレーム・苦情検出",
-        keywords: ["クレーム", "不具合", "トラブル", "おかしい", "問題", "故障", "エラー", "動かない", "困っている", "対応して"],
-        trigger: "顧客からの強い不満や苦情が示された場合",
+        name: "緊急対応検出",
+        keywords: ["解約", "キャンセル", "中止", "クレーム", "不具合", "トラブル", "問題", "故障", "エラー", "対応して"],
+        trigger: "解約・キャンセル・クレーム等の緊急事態が発生した場合",
         delay: 0,
         level: "high"
       }
     ]
   },
   {
-    id: "follow-up-dissatisfaction",
-    name: "催促・未対応の不満",
-    description: "対応の遅れや催促への不満の検出",
+    id: "churn_risk",
+    name: "解約リスク",
+    description: "顧客離脱の可能性が高いアラート（競合検討・不満表明等）",
     color: "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200",
     scenarios: [
       {
-        name: "催促・未対応不満検出",
-        keywords: ["まだですか", "いつまで", "対応して", "返事がない", "待っています", "遅い", "早く", "急いで"],
-        trigger: "対応の遅れや催促への不満が示された場合",
+        name: "解約リスク検出",
+        keywords: ["他社", "競合", "比較", "見直し", "変更", "移行", "不満", "期待外れ", "改善要求"],
+        trigger: "競合他社への移行や不満表明が示された場合",
         delay: 0,
+        level: "high"
+      }
+    ]
+  },
+  {
+    id: "competitive_threat",
+    name: "競合脅威",
+    description: "競合他社からの脅威や提案に関するアラート",
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200",
+    scenarios: [
+      {
+        name: "競合脅威検出",
+        keywords: ["競合", "他社提案", "比較検討", "優位性", "差別化", "価格競争"],
+        trigger: "競合他社からの提案や比較検討が示された場合",
+        delay: 1,
         level: "medium"
+      }
+    ]
+  },
+  {
+    id: "contract_related",
+    name: "契約関連",
+    description: "契約・更新・条件変更に関するアラート",
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200",
+    scenarios: [
+      {
+        name: "契約関連検出",
+        keywords: ["契約", "更新", "条件", "署名", "合意", "締結", "修正", "見積もり"],
+        trigger: "契約や更新に関する重要な話題が出た場合",
+        delay: 1,
+        level: "medium"
+      }
+    ]
+  },
+  {
+    id: "revenue_opportunity",
+    name: "売上機会",
+    description: "アップセル・クロスセル等の売上機会に関するアラート",
+    color: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+    scenarios: [
+      {
+        name: "売上機会検出",
+        keywords: ["追加", "拡張", "アップグレード", "新機能", "提案", "デモ", "説明"],
+        trigger: "追加売上の機会が示された場合",
+        delay: 2,
+        level: "low"
+      }
+    ]
+  },
+  {
+    id: "other",
+    name: "その他",
+    description: "上記カテゴリに該当しないその他のアラート",
+    color: "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200",
+    scenarios: [
+      {
+        name: "その他検出",
+        keywords: ["返信", "確認", "連絡", "回答", "質問", "相談"],
+        trigger: "その他の一般的な問い合わせや連絡事項",
+        delay: 3,
+        level: "low"
       }
     ]
   }
@@ -164,18 +224,20 @@ export default function KeywordsPage() {
     return commonKeywords.filter(keyword => text.includes(keyword))
   }
 
-  // セグメント判定
+  // セグメント判定（新しいセグメント構造に対応）
   const determineSegment = (text: string): string => {
-    if (text.includes("解約") || text.includes("キャンセル") || text.includes("競合") || text.includes("契約")) {
-      return "契約・商談"
-    } else if (text.includes("見積もり") || text.includes("提案書") || text.includes("返信") || text.includes("納期")) {
-      return "営業プロセス"
-    } else if (text.includes("クレーム") || text.includes("不満") || text.includes("担当変更")) {
-      return "クレーム"
-    } else if (text.includes("効果") || text.includes("ROI") || text.includes("活用")) {
-      return "導入後効果"
+    if (text.includes("解約") || text.includes("キャンセル") || text.includes("クレーム") || text.includes("トラブル")) {
+      return "緊急対応"
+    } else if (text.includes("他社") || text.includes("競合") || text.includes("不満") || text.includes("見直し")) {
+      return "解約リスク"
+    } else if (text.includes("競合") || text.includes("比較") || text.includes("優位性")) {
+      return "競合脅威"
+    } else if (text.includes("契約") || text.includes("更新") || text.includes("見積もり") || text.includes("条件")) {
+      return "契約関連"
+    } else if (text.includes("追加") || text.includes("拡張") || text.includes("提案") || text.includes("デモ")) {
+      return "売上機会"
     }
-    return "営業プロセス"
+    return "その他"
   }
 
   // 優先度判定
@@ -200,16 +262,18 @@ export default function KeywordsPage() {
     return "1"
   }
 
-  // ユースケース例生成
+  // ユースケース例生成（新しいセグメント構造に対応）
   const generateUseCaseExample = (userCase: string): string => {
-    if (userCase.includes("解約")) {
+    if (userCase.includes("解約") || userCase.includes("キャンセル")) {
       return "サービスの解約を検討しています。他社に移行する予定です。"
-    } else if (userCase.includes("競合")) {
+    } else if (userCase.includes("競合") || userCase.includes("他社")) {
       return "他社から新しい提案を受けています。比較検討中です。"
-    } else if (userCase.includes("見積もり")) {
-      return "先日お願いしたお見積りはいつ頃いただけますか？急いでいます。"
-    } else if (userCase.includes("クレーム")) {
+    } else if (userCase.includes("見積もり") || userCase.includes("契約")) {
+      return "先日お願いしたお見積りはいつ頃いただけますか？契約条件についても確認したいです。"
+    } else if (userCase.includes("クレーム") || userCase.includes("トラブル")) {
       return "先日納品された製品の品質に不満があります。説明と違う点について改善要求します。"
+    } else if (userCase.includes("追加") || userCase.includes("拡張")) {
+      return "現在のサービスに追加機能を検討しています。デモンストレーションをお願いします。"
     }
     return "具体的なユースケース例を入力してください。"
   }
@@ -498,10 +562,12 @@ export default function KeywordsPage() {
                     <Select value={generatedTemplate.segment} onValueChange={(v) => setGeneratedTemplate({...generatedTemplate, segment: v})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="契約・商談">契約・商談</SelectItem>
-                        <SelectItem value="営業プロセス">営業プロセス</SelectItem>
-                        <SelectItem value="クレーム">クレーム</SelectItem>
-                        <SelectItem value="導入後効果">導入後効果</SelectItem>
+                        <SelectItem value="緊急対応">緊急対応</SelectItem>
+                        <SelectItem value="解約リスク">解約リスク</SelectItem>
+                        <SelectItem value="競合脅威">競合脅威</SelectItem>
+                        <SelectItem value="契約関連">契約関連</SelectItem>
+                        <SelectItem value="売上機会">売上機会</SelectItem>
+                        <SelectItem value="その他">その他</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

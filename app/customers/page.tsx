@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useCallback } from "react"
+import React, { useEffect, useMemo, useState, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,96 +32,242 @@ import {
   TrendingDown, 
   Activity,
   BarChart3,
-  Eye
+  Eye,
+  FileText,
+  Send,
+  ClipboardList
 } from "lucide-react"
 import { PageHeader } from "@/components/layout/PageHeader"
 
-// レーダーチャート用のコンポーネント（簡易版）
-const RadarChart = ({ data, size = 200 }: { data: any, size?: number }) => {
-  const center = size / 2;
-  const radius = size / 2 - 20;
-  const angleStep = (2 * Math.PI) / data.length;
+// レーダーチャート用のコンポーネント（ホバー対応版・最適化済み）
+const RadarChart = React.memo(({ data, size = 400 }: { data: any, size?: number }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
+  // 計算結果をメモ化
+  const chartConfig = useMemo(() => {
+    const center = size / 2;
+    const radius = size / 2 - 80;
+    const angleStep = (2 * Math.PI) / data.length;
+    return { center, radius, angleStep };
+  }, [size, data.length]);
+  
+  const { center, radius, angleStep } = chartConfig;
 
-  const points = data.map((item: any, index: number) => {
-    const angle = index * angleStep - Math.PI / 2;
-    const value = item.value / 100; // 0-1に正規化
-    const x = center + Math.cos(angle) * radius * value;
-    const y = center + Math.sin(angle) * radius * value;
-    return { x, y, label: item.label, value: item.value };
-  });
+  // ポイント計算をメモ化
+  const points = useMemo(() => {
+    return data.map((item: any, index: number) => {
+      const angle = index * angleStep - Math.PI / 2;
+      const value = item.value / 100; // 0-1に正規化
+      const x = center + Math.cos(angle) * radius * value;
+      const y = center + Math.sin(angle) * radius * value;
+      return { x, y, label: item.label, value: item.value, angle, description: item.description };
+    });
+  }, [data, angleStep, center, radius]);
 
-  const pathData = points.map((point: any, index: number) => 
-    `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-  ).join(' ') + ' Z';
+  // パスデータをメモ化
+  const pathData = useMemo(() => {
+    return points.map((point: any, index: number) => 
+      `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+    ).join(' ') + ' Z';
+  }, [points]);
 
   return (
     <div className="flex flex-col items-center">
-      <svg width={size} height={size} className="border rounded-lg bg-gray-50">
-        {/* 背景の円 */}
-        {[0.2, 0.4, 0.6, 0.8, 1.0].map((scale, i) => (
-          <circle
-            key={i}
-            cx={center}
-            cy={center}
-            r={radius * scale}
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="1"
+      <div className="relative">
+        <svg 
+          width={size} 
+          height={size} 
+          className="border rounded-lg bg-gradient-to-br from-gray-50 to-gray-100"
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setMousePosition({
+              x: e.clientX - rect.left,
+              y: e.clientY - rect.top
+            });
+          }}
+        >
+          {/* 背景の円とスケール */}
+          {[0.2, 0.4, 0.6, 0.8, 1.0].map((scale, i) => (
+            <g key={i}>
+              <circle
+                cx={center}
+                cy={center}
+                r={radius * scale}
+                fill="none"
+                stroke={i === 4 ? "#9ca3af" : "#e5e7eb"}
+                strokeWidth={i === 4 ? "2" : "1"}
+                strokeDasharray={i === 4 ? "none" : "2,2"}
+              />
+              {/* スケール数値 */}
+              <text
+                x={center + radius * scale + 8}
+                y={center + 4}
+                fontSize="12"
+                fill="#6b7280"
+                className="font-mono"
+              >
+                {Math.round(scale * 100)}
+              </text>
+            </g>
+          ))}
+          
+          {/* 軸線とラベル */}
+          {data.map((item: any, index: number) => {
+            const angle = index * angleStep - Math.PI / 2;
+            const x = center + Math.cos(angle) * radius;
+            const y = center + Math.sin(angle) * radius;
+            const labelX = center + Math.cos(angle) * (radius + 35);
+            const labelY = center + Math.sin(angle) * (radius + 35);
+            
+            return (
+              <g key={index}>
+                <line
+                  x1={center}
+                  y1={center}
+                  x2={x}
+                  y2={y}
+                  stroke="#d1d5db"
+                  strokeWidth="1"
+                />
+                {/* 軸ラベル */}
+                <text
+                  x={labelX}
+                  y={labelY}
+                  fontSize="13"
+                  fill="#374151"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="font-semibold cursor-pointer"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  {item.label}
+                </text>
+              </g>
+            );
+          })}
+          
+          {/* データエリア */}
+          <path
+            d={pathData}
+            fill="rgba(59, 130, 246, 0.25)"
+            stroke="#3b82f6"
+            strokeWidth="3"
           />
-        ))}
-        
-        {/* 軸線 */}
-        {data.map((_: any, index: number) => {
-          const angle = index * angleStep - Math.PI / 2;
-          const x = center + Math.cos(angle) * radius;
-          const y = center + Math.sin(angle) * radius;
-          return (
-            <line
-              key={index}
-              x1={center}
-              y1={center}
-              x2={x}
-              y2={y}
-              stroke="#d1d5db"
-              strokeWidth="1"
-            />
-          );
-        })}
-        
-        {/* データエリア */}
-        <path
-          d={pathData}
-          fill="rgba(59, 130, 246, 0.3)"
-          stroke="#3b82f6"
-          strokeWidth="2"
-        />
-        
-        {/* データポイント */}
-        {points.map((point: any, index: number) => (
-          <circle
-            key={index}
-            cx={point.x}
-            cy={point.y}
-            r="4"
-            fill="#3b82f6"
-            stroke="white"
-            strokeWidth="2"
-          />
-        ))}
-      </svg>
-      
-      {/* ラベル */}
-      <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-        {data.map((item: any, index: number) => (
-          <div key={index} className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span>{item.label}: {item.value}%</span>
-          </div>
-        ))}
+          
+          {/* データポイント */}
+          {points.map((point: any, index: number) => (
+            <g key={index}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={hoveredIndex === index ? "8" : "6"}
+                fill={hoveredIndex === index ? "#1d4ed8" : "#3b82f6"}
+                stroke="white"
+                strokeWidth="3"
+                className="cursor-pointer transition-all duration-200"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+              {/* 値表示 */}
+              <text
+                x={point.x}
+                y={point.y - 15}
+                fontSize="12"
+                fill="#1f2937"
+                textAnchor="middle"
+                className="font-bold pointer-events-none"
+              >
+                {point.value}%
+              </text>
+            </g>
+          ))}
+          
+          {/* ホバー時の説明ツールチップ */}
+          {hoveredIndex !== null && (() => {
+            const description = data[hoveredIndex].description;
+            const maxCharsPerLine = 40;
+            const lines = [];
+            let currentLine = '';
+            
+            // 長いテキストを複数行に分割
+            description.split('').forEach((char: string) => {
+              if (currentLine.length >= maxCharsPerLine && char === '。') {
+                lines.push(currentLine + char);
+                currentLine = '';
+              } else if (currentLine.length >= maxCharsPerLine && (char === '、' || char === ' ')) {
+                lines.push(currentLine + char);
+                currentLine = '';
+              } else {
+                currentLine += char;
+              }
+            });
+            if (currentLine) lines.push(currentLine);
+            
+            const tooltipHeight = 40 + (lines.length * 16);
+            const tooltipWidth = Math.min(320, size - 40);
+            
+            // ツールチップの位置を動的に調整
+            let tooltipX = mousePosition.x + 15;
+            let tooltipY = mousePosition.y - tooltipHeight - 10;
+            
+            // 右端からはみ出る場合は左側に表示
+            if (tooltipX + tooltipWidth > size - 10) {
+              tooltipX = mousePosition.x - tooltipWidth - 15;
+            }
+            
+            // 上端からはみ出る場合は下側に表示
+            if (tooltipY < 10) {
+              tooltipY = mousePosition.y + 15;
+            }
+            
+            // 最小位置の制限
+            tooltipX = Math.max(10, tooltipX);
+            tooltipY = Math.max(10, tooltipY);
+            
+            return (
+              <g>
+                <rect
+                  x={tooltipX}
+                  y={tooltipY}
+                  width={tooltipWidth}
+                  height={tooltipHeight}
+                  fill="rgba(0, 0, 0, 0.9)"
+                  rx="8"
+                  className="pointer-events-none"
+                  stroke="rgba(255, 255, 255, 0.2)"
+                  strokeWidth="1"
+                />
+                <text
+                  x={tooltipX + 10}
+                  y={tooltipY + 20}
+                  fontSize="13"
+                  fill="white"
+                  className="font-semibold pointer-events-none"
+                >
+                  {data[hoveredIndex].label}: {data[hoveredIndex].value}%
+                </text>
+                {lines.map((line: string, index: number) => (
+                  <text
+                    key={index}
+                    x={tooltipX + 10}
+                    y={tooltipY + 40 + (index * 16)}
+                    fontSize="11"
+                    fill="#e5e7eb"
+                    className="pointer-events-none"
+                  >
+                    {line}
+                  </text>
+                ))}
+              </g>
+            );
+          })()}
+        </svg>
       </div>
     </div>
   );
-};
+});
 
 export default function CustomersPage() {
   const [rows, setRows] = useState<any[]>([])
@@ -129,10 +275,15 @@ export default function CustomersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isAssigneeModalOpen, setIsAssigneeModalOpen] = useState(false)
   const [isScoringModalOpen, setIsScoringModalOpen] = useState(false)
+  const [isCsSurveyModalOpen, setIsCsSurveyModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [assigneeData, setAssigneeData] = useState<any[]>([])
   const [scoringData, setScoringData] = useState<any>(null)
+  const [csSurveyData, setCsSurveyData] = useState<any>(null)
+  const [csResultsData, setCsResultsData] = useState<any>(null)
+  const [selectedSurvey, setSelectedSurvey] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [sentimentCache, setSentimentCache] = useState<Map<string, any>>(new Map())
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -315,14 +466,21 @@ export default function CustomersPage() {
     );
   };
 
-  // 感情分析スコアリングを生成（実データベース）
-  const generateSentimentScoring = async (customer: any) => {
+  // 感情分析スコアリングを生成（キャッシュ機能付き）
+  const generateSentimentScoring = useCallback(async (customer: any) => {
+    // キャッシュから取得を試行
+    if (sentimentCache.has(customer.domain)) {
+      return sentimentCache.get(customer.domain);
+    }
+
     try {
       // 実際のAPIから感情分析データを取得
       const response = await fetch(`/api/customers/${customer.domain}/sentiment`);
       if (response.ok) {
         const data = await response.json();
-        return data.sentiment;
+        // キャッシュに保存
+        setSentimentCache(prev => new Map(prev.set(customer.domain, data)));
+        return data;
       }
     } catch (error) {
       console.error('感情分析データの取得に失敗:', error);
@@ -332,18 +490,46 @@ export default function CustomersPage() {
     const baseScore = customer.risk_level === 'high' ? 45 : 
                      customer.risk_level === 'medium' ? 70 : 85;
     
-    return {
-      overallScore: baseScore + Math.floor(Math.random() * 10),
-      trend: Math.random() > 0.5 ? 'improving' : 'declining',
-      messageCount: Math.floor(Math.random() * 50) + 20,
+    // 決定論的な値を生成（ドメインベース）
+    const seed = customer.domain.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (offset = 0) => ((seed + offset) % 100) / 100;
+    
+    const fallbackData = {
+      overallScore: baseScore + Math.floor(random(1) * 10),
+      trend: random(2) > 0.5 ? 'improving' : 'declining',
+      messageCount: Math.floor(random(3) * 50) + 20,
       lastAnalysis: new Date().toISOString().split('T')[0],
       radarData: [
-        { label: '満足度', value: baseScore + Math.floor(Math.random() * 15) },
-        { label: '信頼度', value: baseScore + Math.floor(Math.random() * 15) },
-        { label: '継続意向', value: baseScore + Math.floor(Math.random() * 15) },
-        { label: 'レスポンス', value: baseScore + Math.floor(Math.random() * 15) },
-        { label: '協力度', value: baseScore + Math.floor(Math.random() * 15) },
-        { label: '推奨度', value: baseScore + Math.floor(Math.random() * 15) }
+        { 
+          label: '満足度', 
+          value: Math.min(100, baseScore + Math.floor(random(4) * 15)),
+          description: 'サービス・製品に対する顧客の満足度。メール内容の感情分析から算出。'
+        },
+        { 
+          label: '信頼度', 
+          value: Math.min(100, baseScore + Math.floor(random(5) * 15)),
+          description: '当社に対する信頼レベル。継続的なやり取りの質と頻度から評価。'
+        },
+        { 
+          label: '継続意向', 
+          value: Math.min(100, baseScore + Math.floor(random(6) * 15)),
+          description: '契約継続への意欲。更新時期の対応や将来計画の言及から判定。'
+        },
+        { 
+          label: 'レスポンス', 
+          value: Math.min(100, baseScore + Math.floor(random(7) * 15)),
+          description: '問い合わせや提案への反応速度。コミュニケーションの活発さを測定。'
+        },
+        { 
+          label: '協力度', 
+          value: Math.min(100, baseScore + Math.floor(random(8) * 15)),
+          description: '課題解決や改善提案への協力姿勢。建設的な対話の頻度から評価。'
+        },
+        { 
+          label: '推奨度', 
+          value: Math.min(100, baseScore + Math.floor(random(9) * 15)),
+          description: '他社への推奨可能性。ポジティブな言及や紹介の意向から算出。'
+        }
       ],
       riskFactors: customer.risk_level === 'high' ? 
         ['レスポンス遅延', '競合他社検討', '予算削減検討'] :
@@ -356,7 +542,11 @@ export default function CustomersPage() {
         ['継続的な利用', '問題解決への協力'] :
         ['基本的な利用継続']
     };
-  };
+    
+    // キャッシュに保存
+    setSentimentCache(prev => new Map(prev.set(customer.domain, fallbackData)));
+    return fallbackData;
+  }, [sentimentCache]);
 
   const openAssigneeModal = async (customer: any) => {
     setSelectedCustomer(customer);
@@ -365,12 +555,162 @@ export default function CustomersPage() {
     setAssigneeData(assignees);
   };
 
-  const openScoringModal = async (customer: any) => {
+  const openScoringModal = useCallback(async (customer: any) => {
     setSelectedCustomer(customer);
     setIsScoringModalOpen(true);
+    
+    // ローディング状態を表示
+    setScoringData(null);
+    
     const scoring = await generateSentimentScoring(customer);
     setScoringData(scoring);
+    
+    // CS調査結果も同時に読み込み（月別データ）
+    const csResults = {
+      surveys: [
+        {
+          id: '2025-01',
+          title: '2025年1月 顧客満足度調査',
+          surveyDate: '2025-01-20',
+          responseRate: 85,
+          overallSatisfaction: 4.2,
+          npsScore: 7.8,
+          participantCount: 34,
+          responses: [
+            {
+              question: '当社のサービスに満足していますか？',
+              answer: '非常に満足',
+              score: 5,
+              comment: 'サポートが迅速で助かっています。'
+            },
+            {
+              question: '今後も継続してご利用いただけますか？',
+              answer: 'はい',
+              score: 5,
+              comment: '長期的にお付き合いしたいと考えています。'
+            },
+            {
+              question: '他社への推奨度はいかがですか？',
+              answer: '8点',
+              score: 8,
+              comment: '同業他社にも推奨したいと思います。'
+            },
+            {
+              question: '改善してほしい点があれば教えてください。',
+              answer: 'レスポンス時間の短縮',
+              score: null,
+              comment: 'より迅速な対応をお願いします。'
+            }
+          ],
+          actionItems: [
+            'レスポンス時間の改善施策を検討',
+            '定期的なフォローアップの実施',
+            '追加サービスの提案準備'
+          ]
+        },
+        {
+          id: '2024-12',
+          title: '2024年12月 顧客満足度調査',
+          surveyDate: '2024-12-15',
+          responseRate: 78,
+          overallSatisfaction: 3.9,
+          npsScore: 7.2,
+          participantCount: 28,
+          responses: [
+            {
+              question: '当社のサービスに満足していますか？',
+              answer: '満足',
+              score: 4,
+              comment: '概ね満足していますが、改善の余地があります。'
+            },
+            {
+              question: '今後も継続してご利用いただけますか？',
+              answer: 'はい',
+              score: 4,
+              comment: '継続予定ですが、価格面での検討が必要です。'
+            },
+            {
+              question: '他社への推奨度はいかがですか？',
+              answer: '7点',
+              score: 7,
+              comment: '条件次第で推奨できます。'
+            },
+            {
+              question: '改善してほしい点があれば教えてください。',
+              answer: '価格の見直し',
+              score: null,
+              comment: 'コストパフォーマンスの向上を期待します。'
+            }
+          ],
+          actionItems: [
+            '価格体系の見直し検討',
+            'コストパフォーマンス改善施策',
+            '競合他社との比較分析'
+          ]
+        },
+        {
+          id: '2024-11',
+          title: '2024年11月 顧客満足度調査',
+          surveyDate: '2024-11-18',
+          responseRate: 82,
+          overallSatisfaction: 4.0,
+          npsScore: 7.5,
+          participantCount: 31,
+          responses: [
+            {
+              question: '当社のサービスに満足していますか？',
+              answer: '満足',
+              score: 4,
+              comment: '新機能の追加が評価されています。'
+            },
+            {
+              question: '今後も継続してご利用いただけますか？',
+              answer: 'はい',
+              score: 5,
+              comment: '新機能により利便性が向上しました。'
+            },
+            {
+              question: '他社への推奨度はいかがですか？',
+              answer: '8点',
+              score: 8,
+              comment: '機能面で他社より優れています。'
+            },
+            {
+              question: '改善してほしい点があれば教えてください。',
+              answer: 'UI/UXの改善',
+              score: null,
+              comment: 'より直感的な操作性を求めます。'
+            }
+          ],
+          actionItems: [
+            'UI/UX改善プロジェクトの開始',
+            'ユーザビリティテストの実施',
+            '新機能の利用促進施策'
+          ]
+        }
+      ]
+    };
+    setCsResultsData(csResults);
+  }, [generateSentimentScoring]);
+
+  // CS調査依頼モーダルを開く
+  const openCsSurveyModal = async (customer: any) => {
+    setSelectedCustomer(customer);
+    setIsCsSurveyModalOpen(true);
+    // CS調査テンプレートデータを生成
+    setCsSurveyData({
+      surveyType: 'satisfaction',
+      questions: [
+        '当社のサービスに満足していますか？',
+        '今後も継続してご利用いただけますか？',
+        '他社への推奨度はいかがですか？',
+        '改善してほしい点があれば教えてください。'
+      ],
+      estimatedTime: '5分',
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 1週間後
+    });
   };
+
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -469,6 +809,7 @@ export default function CustomersPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => openAssigneeModal(c)}
+                              title="担当者情報"
                             >
                               <Users className="h-3 w-3" />
                             </Button>
@@ -476,6 +817,7 @@ export default function CustomersPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => openScoringModal(c)}
+                              title="顧客分析ダッシュボード"
                             >
                               <BarChart3 className="h-3 w-3" />
                             </Button>
@@ -634,20 +976,33 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Sentiment Scoring Modal */}
+      {/* 顧客分析ダッシュボードモーダル */}
       <Dialog open={isScoringModalOpen} onOpenChange={setIsScoringModalOpen}>
-        <DialogContent className="sm:max-w-[90vw] lg:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              感情分析スコアリング - {selectedCustomer?.company_name || selectedCustomer?.domain}
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              顧客分析ダッシュボード - {selectedCustomer?.company_name || selectedCustomer?.domain}
             </DialogTitle>
             <DialogDescription>
-              AIによる感情分析結果とリスク評価
+              感情分析スコアリングとCS調査結果を統合表示します。
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto">
-            {scoringData ? (
+          
+          <Tabs defaultValue="sentiment" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="sentiment" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                感情分析スコアリング
+              </TabsTrigger>
+              <TabsTrigger value="cs-survey" className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                CS調査結果
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="sentiment" className="space-y-4">
+              {scoringData ? (
               <div className="space-y-4">
                 {/* 総合スコア - Compact layout */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -688,7 +1043,7 @@ export default function CustomersPage() {
                     <CardTitle className="text-base">詳細分析</CardTitle>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <RadarChart data={scoringData.radarData} size={200} />
+                    <RadarChart data={scoringData.radarData} size={400} />
                   </CardContent>
                 </Card>
 
@@ -741,12 +1096,334 @@ export default function CustomersPage() {
                 感情分析データを読み込み中...
               </div>
             )}
-          </div>
+            </TabsContent>
+
+            <TabsContent value="cs-survey" className="space-y-4">
+              {csResultsData && csResultsData.surveys && Array.isArray(csResultsData.surveys) ? (
+                <div className="space-y-4">
+                  {!selectedSurvey ? (
+                    // 調査一覧表示
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">CS調査履歴</h3>
+                        <Button 
+                          onClick={() => {
+                            setIsScoringModalOpen(false);
+                            openCsSurveyModal(selectedCustomer);
+                          }}
+                          className="flex items-center gap-2"
+                          size="sm"
+                        >
+                          <Send className="h-4 w-4" />
+                          新しいCS調査を依頼
+                        </Button>
+                      </div>
+                      
+                      <div className="grid gap-4">
+                        {csResultsData.surveys.map((survey: any) => (
+                          <Card key={survey.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                            <CardContent className="p-4" onClick={() => setSelectedSurvey(survey)}>
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-semibold text-gray-800">{survey.title}</h4>
+                                <Badge variant="outline">{survey.surveyDate}</Badge>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-blue-600">
+                                    {survey.overallSatisfaction}/5.0
+                                  </div>
+                                  <div className="text-xs text-gray-500">総合満足度</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600">
+                                    {survey.npsScore}/10
+                                  </div>
+                                  <div className="text-xs text-gray-500">NPS スコア</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-purple-600">
+                                    {survey.responseRate}%
+                                  </div>
+                                  <div className="text-xs text-gray-500">回答率</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-gray-600">
+                                    {survey.participantCount}名
+                                  </div>
+                                  <div className="text-xs text-gray-500">参加者数</div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between text-sm text-gray-600">
+                                <span>質問数: {survey.responses.length}問</span>
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-4 w-4" />
+                                  詳細を見る
+                                </span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  ) : selectedSurvey ? (
+                    // 選択された調査の詳細表示
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSelectedSurvey(null)}
+                          className="flex items-center gap-2"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          戻る
+                        </Button>
+                        <h3 className="text-lg font-semibold">{selectedSurvey.title}</h3>
+                      </div>
+
+                      {/* サマリー */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold text-blue-600 mb-1">
+                              {selectedSurvey.overallSatisfaction}/5.0
+                            </div>
+                            <div className="text-sm text-gray-500">総合満足度</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold text-green-600 mb-1">
+                              {selectedSurvey.npsScore}/10
+                            </div>
+                            <div className="text-sm text-gray-500">NPS スコア</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold text-purple-600 mb-1">
+                              {selectedSurvey.responseRate}%
+                            </div>
+                            <div className="text-sm text-gray-500">回答率</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold text-gray-600 mb-1">
+                              {selectedSurvey.participantCount}名
+                            </div>
+                            <div className="text-sm text-gray-500">参加者数</div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* 回答詳細 */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">回答詳細</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {selectedSurvey.responses.map((response: any, index: number) => (
+                              <div key={index} className="border rounded-lg p-4">
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="text-sm font-medium text-gray-800 flex-1">
+                                    {response.question}
+                                  </h4>
+                                  {response.score && (
+                                    <div className="flex items-center gap-1 ml-4">
+                                      <span className="text-xs text-gray-500">スコア:</span>
+                                      <span className="text-sm font-bold text-blue-600">
+                                        {response.score}{response.score <= 5 ? '/5' : '/10'}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-600">回答: </span>
+                                    <span className="text-sm text-gray-800">{response.answer}</span>
+                                  </div>
+                                  {response.comment && (
+                                    <div>
+                                      <span className="text-xs font-medium text-gray-600">コメント: </span>
+                                      <span className="text-sm text-gray-700 italic">{response.comment}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* アクションアイテム */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">推奨アクション</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {selectedSurvey.actionItems.map((item: string, index: number) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                <span className="text-sm text-gray-800">{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 調査情報 */}
+                      <Card>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>調査実施日: {selectedSurvey.surveyDate}</span>
+                            <span>参加者数: {selectedSurvey.participantCount}名</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      調査を選択してください
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 space-y-4">
+                  <div className="text-gray-500">CS調査結果がありません</div>
+                  <Button 
+                    onClick={() => {
+                      setIsScoringModalOpen(false);
+                      openCsSurveyModal(selectedCustomer);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    CS調査を依頼
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
           <DialogFooter className="mt-4">
-            <Button onClick={() => setIsScoringModalOpen(false)}>閉じる</Button>
+            <Button onClick={() => {
+              setIsScoringModalOpen(false);
+              setSelectedSurvey(null); // 選択された調査をリセット
+            }}>閉じる</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CS調査依頼モーダル */}
+      <Dialog open={isCsSurveyModalOpen} onOpenChange={setIsCsSurveyModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-blue-600" />
+              CS調査依頼 - {selectedCustomer?.company_name}
+            </DialogTitle>
+            <DialogDescription>
+              顧客満足度調査を依頼します。調査内容を確認してください。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {csSurveyData ? (
+              <div className="space-y-4">
+                {/* 調査概要 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">調査概要</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">調査タイプ</Label>
+                        <p className="text-sm">顧客満足度調査</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">予想回答時間</Label>
+                        <p className="text-sm">{csSurveyData.estimatedTime}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">回答期限</Label>
+                        <p className="text-sm">{csSurveyData.deadline}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">質問数</Label>
+                        <p className="text-sm">{csSurveyData.questions.length}問</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 調査質問 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">調査質問</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {csSurveyData.questions.map((question: string, index: number) => (
+                        <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <p className="text-sm text-gray-800">{question}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 送信先情報 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">送信先情報</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedCustomer?.company_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedCustomer?.domain}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">担当者: {selectedCustomer?.assignee || '未設定'}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                調査データを準備中...
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsCsSurveyModalOpen(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={() => {
+              // TODO: CS調査送信処理
+              alert('CS調査を送信しました');
+              setIsCsSurveyModalOpen(false);
+            }}>
+              調査を送信
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

@@ -16,8 +16,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { AlertTriangle, Clock, Edit2, Send, Settings, Target, XCircle, AlertCircle, Sparkles, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { AlertTriangle, Clock, Edit2, Send, Settings, Target, XCircle, AlertCircle, Sparkles, Loader2, Shield } from "lucide-react"
+import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { toast } from "sonner"
 
@@ -60,80 +60,99 @@ interface PhraseRequest {
   createdAt: Date
 }
 
-// 検知パターンセグメント定義（アラート一覧と統一）
+// 検知パターンセグメント定義（フレーズ設定専用）
 const segments = [
   {
-    id: "lose",
-    name: "失注・解約",
-    description: "失注や解約につながるリスクの検出",
+    id: "urgent_response",
+    name: "緊急対応",
+    description: "即座に対応が必要な緊急アラート（解約・キャンセル・クレーム等）",
     icon: AlertTriangle,
     color: "bg-red-500 text-white",
     borderColor: "border-red-500",
     scenarios: [
       {
-        name: "失注・解約検出",
-        phrases: ["解約", "キャンセル", "中止", "やめ", "辞め", "終了", "停止", "見送り", "断念", "失注", "契約終了", "サービス停止"],
-        trigger: "失注や解約の可能性が示された場合",
+        name: "緊急対応検出",
+        phrases: ["解約", "キャンセル", "中止", "クレーム", "不具合", "トラブル", "問題", "故障", "エラー", "対応して"],
+        trigger: "解約・キャンセル・クレーム等の緊急事態が発生した場合",
         delay: 0,
         level: "high",
-        useCase: "失注・解約",
+        useCase: "緊急対応",
         isSalesRequest: false
       }
     ]
   },
   {
-    id: "rival",
-    name: "競合比較",
-    description: "競合他社との比較や検討の検出",
-    icon: Target,
+    id: "churn_risk",
+    name: "解約リスク",
+    description: "顧客離脱の可能性が高いアラート（競合検討・不満表明等）",
+    icon: AlertCircle,
     color: "bg-orange-500 text-white",
     borderColor: "border-orange-500",
     scenarios: [
       {
-        name: "競合比較検出",
-        phrases: ["競合", "他社", "比較", "検討", "相見積", "見積比較", "A社", "B社", "別の会社", "競合他社", "他のベンダー"],
-        trigger: "競合他社との比較検討が示された場合",
+        name: "解約リスク検出",
+        phrases: ["他社", "競合", "比較", "見直し", "変更", "移行", "不満", "期待外れ", "改善要求"],
+        trigger: "競合他社への移行や不満表明が示された場合",
         delay: 0,
-        level: "medium",
-        useCase: "競合比較",
+        level: "high",
+        useCase: "解約リスク",
         isSalesRequest: false
       }
     ]
   },
   {
-    id: "addreq",
-    name: "追加要望",
-    description: "追加機能や要望の検出",
-    icon: Settings,
+    id: "competitive_threat",
+    name: "競合脅威",
+    description: "競合他社からの脅威や提案に関するアラート",
+    icon: Shield,
+    color: "bg-yellow-500 text-white",
+    borderColor: "border-yellow-500",
+    scenarios: [
+      {
+        name: "競合脅威検出",
+        phrases: ["競合", "他社提案", "比較検討", "優位性", "差別化", "価格競争"],
+        trigger: "競合他社からの提案や比較検討が示された場合",
+        delay: 1,
+        level: "medium",
+        useCase: "競合脅威",
+        isSalesRequest: false
+      }
+    ]
+  },
+  {
+    id: "contract_related",
+    name: "契約関連",
+    description: "契約・更新・条件変更に関するアラート",
+    icon: Clock,
     color: "bg-blue-500 text-white",
     borderColor: "border-blue-500",
     scenarios: [
       {
-        name: "追加要望検出",
-        phrases: ["追加", "機能追加", "カスタマイズ", "改善", "要望", "希望", "できれば", "可能であれば", "オプション"],
-        trigger: "追加機能や要望が示された場合",
-        delay: 0,
+        name: "契約関連検出",
+        phrases: ["契約", "更新", "条件", "署名", "合意", "締結", "修正", "見積もり"],
+        trigger: "契約や更新に関する重要な話題が出た場合",
+        delay: 1,
         level: "medium",
-        useCase: "追加要望",
+        useCase: "契約関連",
         isSalesRequest: true
       }
     ]
   },
   {
-    id: "renewal",
-    name: "更新・継続",
-    description: "契約更新や継続に関する検出",
-    icon: Clock,
+    id: "revenue_opportunity",
+    name: "売上機会",
+    description: "アップセル・クロスセル等の売上機会に関するアラート",
+    icon: Target,
     color: "bg-green-500 text-white",
     borderColor: "border-green-500",
     scenarios: [
       {
-        name: "更新・継続検出",
-        phrases: ["更新", "継続", "延長", "契約更新", "再契約", "次年度", "来年", "継続利用", "更新手続き"],
-        trigger: "契約更新や継続の話題が示された場合",
-        delay: 0,
+        name: "売上機会検出",
+        phrases: ["追加", "拡張", "アップグレード", "新機能", "提案", "デモ", "説明"],
+        trigger: "追加売上の機会が示された場合",
+        delay: 2,
         level: "low",
-        useCase: "更新・継続",
+        useCase: "売上機会",
         isSalesRequest: true
       }
     ]
@@ -153,60 +172,52 @@ const generateKeywordRecommendations = async (useCase: string): Promise<LLMRecom
   let priority: 'high' | 'medium' | 'low' = "medium";
   let reasoning = "";
   
-  // 失注・解約関連
+  // 緊急対応関連
   if (lowerCase.includes('解約') || lowerCase.includes('キャンセル') || lowerCase.includes('中止') || 
-      lowerCase.includes('やめ') || lowerCase.includes('辞め') || lowerCase.includes('終了')) {
-    keywords = ["解約", "キャンセル", "中止", "やめ", "辞め", "終了", "停止", "見送り", "断念"];
-    segment = "lose";
+      lowerCase.includes('クレーム') || lowerCase.includes('トラブル') || lowerCase.includes('問題')) {
+    keywords = ["解約", "キャンセル", "中止", "クレーム", "不具合", "トラブル", "問題", "故障", "エラー"];
+    segment = "urgent_response";
     priority = "high";
-    reasoning = "解約や契約終了に関連するキーワードが検出されました。顧客離脱のリスクが高いため、最優先で監視する必要があります。";
+    reasoning = "緊急対応が必要なキーワードが検出されました。解約・クレーム・トラブル等の緊急事態のため、最優先で対応が必要です。";
   }
-  // 競合比較関連
-  else if (lowerCase.includes('競合') || lowerCase.includes('他社') || lowerCase.includes('比較') || 
-           lowerCase.includes('検討') || lowerCase.includes('相見積')) {
-    keywords = ["競合", "他社", "比較", "検討", "相見積", "見積比較", "A社", "B社", "別の会社"];
-    segment = "rival";
+  // 解約リスク関連
+  else if (lowerCase.includes('他社') || lowerCase.includes('競合') || lowerCase.includes('不満') || 
+           lowerCase.includes('見直し') || lowerCase.includes('変更') || lowerCase.includes('移行')) {
+    keywords = ["他社", "競合", "比較", "見直し", "変更", "移行", "不満", "期待外れ", "改善要求"];
+    segment = "churn_risk";
+    priority = "high";
+    reasoning = "顧客離脱のリスクが検出されました。競合検討や不満表明があるため、優先的な対応が必要です。";
+  }
+  // 競合脅威関連
+  else if (lowerCase.includes('競合') || lowerCase.includes('比較検討') || lowerCase.includes('優位性') || 
+           lowerCase.includes('差別化') || lowerCase.includes('価格競争')) {
+    keywords = ["競合", "他社提案", "比較検討", "優位性", "差別化", "価格競争"];
+    segment = "competitive_threat";
     priority = "medium";
-    reasoning = "競合他社との比較検討に関するキーワードが検出されました。営業戦略の見直しが必要な可能性があります。";
+    reasoning = "競合他社からの脅威が検出されました。競合分析と対策の検討が必要です。";
   }
-  // 更新・継続関連
-  else if (lowerCase.includes('更新') || lowerCase.includes('継続') || lowerCase.includes('延長') || 
-           lowerCase.includes('次年度') || lowerCase.includes('来年')) {
-    keywords = ["更新", "継続", "延長", "契約更新", "再契約", "次年度", "来年", "継続利用"];
-    segment = "renewal";
+  // 契約関連
+  else if (lowerCase.includes('契約') || lowerCase.includes('更新') || lowerCase.includes('見積もり') || 
+           lowerCase.includes('条件') || lowerCase.includes('署名') || lowerCase.includes('合意')) {
+    keywords = ["契約", "更新", "条件", "署名", "合意", "締結", "修正", "見積もり"];
+    segment = "contract_related";
+    priority = "medium";
+    reasoning = "契約や更新に関するキーワードが検出されました。適切なタイミングでのフォローアップが重要です。";
+  }
+  // 売上機会関連
+  else if (lowerCase.includes('追加') || lowerCase.includes('拡張') || lowerCase.includes('アップグレード') || 
+           lowerCase.includes('新機能') || lowerCase.includes('提案') || lowerCase.includes('デモ')) {
+    keywords = ["追加", "拡張", "アップグレード", "新機能", "提案", "デモ", "説明"];
+    segment = "revenue_opportunity";
     priority = "low";
-    reasoning = "契約更新や継続に関するキーワードが検出されました。適切なタイミングでフォローアップを行うことで継続率を向上できます。";
+    reasoning = "売上機会に関するキーワードが検出されました。アップセル・クロスセルの機会として活用できます。";
   }
-  // 追加要望・カスタマイズ関連
-  else if (lowerCase.includes('追加') || lowerCase.includes('機能') || lowerCase.includes('カスタマイズ') || 
-           lowerCase.includes('改善') || lowerCase.includes('要望') || lowerCase.includes('希望')) {
-    keywords = ["追加", "機能追加", "カスタマイズ", "改善", "要望", "希望", "できれば", "可能であれば"];
-    segment = "addreq";
-    priority = "medium";
-    reasoning = "追加機能や改善要望に関するキーワードが検出されました。アップセルの機会として活用できる可能性があります。";
-  }
-  // 価格・コスト関連
-  else if (lowerCase.includes('価格') || lowerCase.includes('料金') || lowerCase.includes('コスト') || 
-           lowerCase.includes('値引') || lowerCase.includes('安く') || lowerCase.includes('高い')) {
-    keywords = ["価格", "料金", "コスト", "値引き", "安く", "高い", "予算", "費用"];
-    segment = "rival";
-    priority = "high";
-    reasoning = "価格やコストに関する懸念が検出されました。競合との価格競争や予算制約の可能性があるため、優先的に対応が必要です。";
-  }
-  // 問題・トラブル関連
-  else if (lowerCase.includes('問題') || lowerCase.includes('トラブル') || lowerCase.includes('不具合') || 
-           lowerCase.includes('エラー') || lowerCase.includes('困っ') || lowerCase.includes('不満')) {
-    keywords = ["問題", "トラブル", "不具合", "エラー", "困っている", "不満", "苦情", "クレーム"];
-    segment = "lose";
-    priority = "high";
-    reasoning = "問題やトラブルに関するキーワードが検出されました。顧客満足度の低下や解約リスクがあるため、緊急対応が必要です。";
-  }
-  // デフォルト（一般的な要望）
+  // デフォルト（売上機会）
   else {
-    keywords = ["要望", "相談", "検討", "質問", "確認", "お願い"];
-    segment = "addreq";
-    priority = "medium";
-    reasoning = "一般的な要望や相談に関する内容と判断されました。適切なフォローアップを行うことで顧客満足度を向上できます。";
+    keywords = ["追加", "拡張", "アップグレード", "新機能", "提案", "デモ", "説明"];
+    segment = "revenue_opportunity";
+    priority = "low";
+    reasoning = "一般的な要望や相談に関する内容と判断されました。売上機会として活用できる可能性があります。";
   }
   
   return {
@@ -235,6 +246,7 @@ export default function SegmentsPage() {
   
   // リクエスト関連の状態
   const [requests, setRequests] = useState<PhraseRequest[]>([])
+  
 
   const handleSegmentSelect = (segment: any) => {
     console.log('🔍 セグメント選択:', segment)
@@ -589,38 +601,43 @@ export default function SegmentsPage() {
                   <CardDescription>監視対象のセグメントを選択してください（営業リクエストで作成されたテンプレートは緑色で表示）</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 overflow-y-auto max-h-[1078px]">
-                  {segments.map((segment) => (
-                    <div
-                      key={segment.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                        selectedSegment?.id === segment.id 
-                          ? `${segment.borderColor} border-2 bg-opacity-50` 
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-                      }`}
-                      onClick={() => handleSegmentSelect(segment)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${segment.color}`}>
-                          <segment.icon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-sm">{segment.name}</h3>
-                          <p className="text-xs text-muted-foreground mt-1">{segment.description}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {segment.scenarios.length} テンプレート
-                            </Badge>
-                            {/* 営業リクエストで作成されたテンプレート数を表示 */}
-                            {segment.scenarios.filter((s: any) => s.useCase === "キーワードリクエストで作成されたテンプレート").length > 0 && (
-                              <Badge variant="default" className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-                                {segment.scenarios.filter((s: any) => s.useCase === "キーワードリクエストで作成されたテンプレート").length} 営業リクエスト
+                  {segments.map((segment) => {
+                    const Icon = segment.icon;
+                    const isActive = selectedSegment?.id === segment.id;
+                    
+                    return (
+                      <div
+                        key={segment.id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          isActive 
+                            ? `${segment.borderColor} border-2 bg-opacity-50` 
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        }`}
+                        onClick={() => handleSegmentSelect(segment)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${segment.color}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium text-sm">{segment.name}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">{segment.description}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {segment.scenarios.length} テンプレート
                               </Badge>
-                            )}
+                              {/* 営業リクエストで作成されたテンプレート数を表示 */}
+                              {segment.scenarios.filter((s: any) => s.useCase === "キーワードリクエストで作成されたテンプレート").length > 0 && (
+                                <Badge variant="default" className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                                  {segment.scenarios.filter((s: any) => s.useCase === "キーワードリクエストで作成されたテンプレート").length} 営業リクエスト
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
             </div>

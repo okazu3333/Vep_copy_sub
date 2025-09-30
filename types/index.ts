@@ -31,12 +31,13 @@ export interface Alert {
   // 追加（任意）: 感情・ネガ判定
   sentiment_label?: 'positive' | 'neutral' | 'negative' | null;
   negative_flag?: boolean;
-  segments?: {
-    lose?: boolean;
-    rival?: boolean;
-    addreq?: boolean;
-    renewal?: boolean;
-  };
+  // 新しいセグメント形式
+  primarySegment?: 'urgent_response' | 'churn_risk' | 'competitive_threat' | 'contract_related' | 'revenue_opportunity' | 'other' | null;
+  segmentConfidence?: number;
+  urgencyScore?: number;
+  // 検知理由とキーワードハイライト
+  detectionReasons?: string[];
+  highlightKeywords?: string[];
 }
 
 export interface EmailThread {

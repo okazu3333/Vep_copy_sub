@@ -10,8 +10,6 @@ import { useSavedViews } from '@/hooks/use-saved-views';
 import { Bookmark, Save, Trash2 } from 'lucide-react';
 
 export interface AlertsFilters {
-  department: string;
-  customer: string;
   severity: string;
   period: string;
   status: string;
@@ -27,19 +25,23 @@ interface FilterBarProps {
 export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: FilterBarProps) {
   const tokens = useMemo(() => {
     const t: string[] = [];
-    if (filters.department !== 'all') t.push(`部門:${filters.department}`);
-    if (filters.severity !== 'all') t.push(`レベル:${filters.severity}`);
+    if (filters.severity !== 'all') {
+      const severityLabels: Record<string, string> = {
+        'high': '高リスク (スコア80+)',
+        'medium': '中リスク (スコア50-79)',
+        'low': '低リスク (スコア30-49)',
+        'very_low': '極低リスク (スコア30未満)'
+      };
+      t.push(`重要度:${severityLabels[filters.severity] || filters.severity}`);
+    }
     if (filters.status !== 'all') t.push(`状態:${filters.status}`);
     if (!hidePeriod && filters.period !== 'all') t.push(`期間:${filters.period}`);
-    if (filters.customer) t.push(`顧客:${filters.customer}`);
     if (filters.search) t.push(`検索:${filters.search}`);
     return t;
   }, [filters, hidePeriod]);
 
   const handleClear = () => {
     onFiltersChange({ 
-      department: 'all', 
-      customer: '', 
       severity: 'all', 
       period: 'all', 
       status: 'all', 
@@ -49,23 +51,20 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
 
   return (
     <div className="space-y-4">
-      {/* Filter Controls */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <div>
-          <label className="text-xs text-gray-500">部門</label>
-          <Select value={filters.department} onValueChange={(v) => onFiltersChange({ ...filters, department: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="すべて" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="営業部">営業部</SelectItem>
-              <SelectItem value="マーケティング部">マーケティング部</SelectItem>
-              <SelectItem value="カスタマーサクセス部">カスタマーサクセス部</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Filter Controls - 横一列表示 */}
+      <div className="flex flex-wrap items-end gap-4">
+        {/* 検索窓を大きくする */}
+        <div className="flex-1 min-w-[300px]">
+          <label className="text-xs text-gray-500">検索</label>
+          <Input 
+            value={filters.search} 
+            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })} 
+            placeholder="件名・キーワード・顧客名で検索" 
+            className="text-base"
+          />
         </div>
-        <div>
+        
+        <div className="min-w-[180px]">
           <label className="text-xs text-gray-500">重要度</label>
           <Select value={filters.severity} onValueChange={(v) => onFiltersChange({ ...filters, severity: v })}>
             <SelectTrigger>
@@ -73,13 +72,15 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="A">A (高)</SelectItem>
-              <SelectItem value="B">B (中)</SelectItem>
-              <SelectItem value="C">C (低)</SelectItem>
+              <SelectItem value="high">高リスク (スコア80+)</SelectItem>
+              <SelectItem value="medium">中リスク (スコア50-79)</SelectItem>
+              <SelectItem value="low">低リスク (スコア30-49)</SelectItem>
+              <SelectItem value="very_low">極低リスク (スコア30未満)</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div>
+        
+        <div className="min-w-[120px]">
           <label className="text-xs text-gray-500">ステータス</label>
           <Select value={filters.status} onValueChange={(v) => onFiltersChange({ ...filters, status: v })}>
             <SelectTrigger>
@@ -93,8 +94,9 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
             </SelectContent>
           </Select>
         </div>
+        
         {!hidePeriod && (
-          <div>
+          <div className="min-w-[120px]">
             <label className="text-xs text-gray-500">分析期間</label>
             <Select value={filters.period} onValueChange={(v) => onFiltersChange({ ...filters, period: v })}>
               <SelectTrigger>
@@ -109,21 +111,17 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
             </Select>
           </div>
         )}
-        <div>
-          <label className="text-xs text-gray-500">顧客</label>
-          <Input 
-            value={filters.customer} 
-            onChange={(e) => onFiltersChange({ ...filters, customer: e.target.value })} 
-            placeholder="顧客名" 
-          />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500">検索</label>
-          <Input 
-            value={filters.search} 
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })} 
-            placeholder="件名・キーワード" 
-          />
+        
+        {/* クリアボタン */}
+        <div className="flex items-end">
+          <Button 
+            variant="outline" 
+            size="default"
+            onClick={handleClear}
+            className="h-10"
+          >
+            クリア
+          </Button>
         </div>
       </div>
 
