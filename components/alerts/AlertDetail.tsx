@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { INTERNAL_EMAIL_DOMAINS } from '@/lib/constants/internal-domains';
 
 interface AlertDetailProps {
   alert: Alert;
@@ -25,11 +26,7 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
   const [bodyCache, setBodyCache] = useState<Record<string, string>>({});
 
   // 社内ドメイン判定（暫定リスト）
-  const INTERNAL_DOMAINS = [
-    'fittio.co.jp','gra-m.com','withwork.co.jp','cross-c.co.jp','propworks.co.jp','cross-m.co.jp',
-    'cm-group.co.jp','shoppers-eye.co.jp','d-and-m.co.jp','medi-l.com','metasite.co.jp','infidex.co.jp',
-    'excrie.co.jp','alternaex.co.jp','cmg.traffics.jp','tokyogets.com','pathcrie.co.jp','reech.co.jp'
-  ];
+  const INTERNAL_DOMAINS = INTERNAL_EMAIL_DOMAINS;
   
   const extractDomain = (s: string): string | null => {
     if (!s) return null;

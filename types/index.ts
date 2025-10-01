@@ -12,6 +12,7 @@ export interface Alert {
   subject: string;
   email_subject?: string;
   severity: 'A' | 'B' | 'C';
+  level?: 'high' | 'medium' | 'low';
   sentiment_score: number;
   department: string;
   customer: string;

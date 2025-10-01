@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertCard } from '@/components/alerts/AlertCard';
 import { AlertDetail } from '@/components/alerts/AlertDetail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, EmailThread } from '@/types';
-import { AlertTriangle, Brain, Shield, Target, Zap, ChevronLeft, ChevronRight, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Brain, Shield, Target, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { FilterBar, AlertsFilters } from '@/components/ui/FilterBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HighlightText } from '@/components/ui/HighlightText';
 // import { DetectionReasons } from '@/components/ui/DetectionReasons'; // 一覧表示では不使用
+import { INTERNAL_EMAIL_DOMAINS } from '@/lib/constants/internal-domains';
 
 type SegmentKey = 'urgent_response' | 'churn_risk' | 'competitive_threat' | 'contract_related' | 'revenue_opportunity' | 'other';
 
@@ -30,147 +30,6 @@ interface ThreadMessage {
   body?: string | null;
   in_reply_to?: string | null;
 }
-
-// 内部ドメインリスト
-const INTERNAL_DOMAINS = [
-  'fittio.co.jp', 'gra-m.com', 'withwork.co.jp', 'cross-c.co.jp',
-  'propworks.co.jp', 'cross-m.co.jp', 'cm-group.co.jp', 'shoppers-eye.co.jp',
-  'd-and-m.co.jp', 'medi-l.com', 'metasite.co.jp', 'infidex.co.jp',
-  'excrie.co.jp', 'alternaex.co.jp', 'cmg.traffics.jp', 'tokyogets.com',
-  'pathcrie.co.jp', 'reech.co.jp'
-];
-
-// Helper function to safely get phrases as an array
-const getPhrasesAsArray = (phrases: string[] | string | null | undefined): string[] => {
-  if (!phrases) return [];
-  if (Array.isArray(phrases)) return phrases.filter(p => typeof p === 'string');
-  if (typeof phrases === 'string') return [phrases];
-  return [];
-};
-
-// Enhanced risk scoring logic (DEPRECATED - now using API-calculated urgencyScore)
-/*
-const calculateRiskScore = (alert: Alert): number => {
-  let score = 0;
-  
-  // Base score from sentiment
-  if (alert.sentiment_score) {
-    if (alert.sentiment_score < -0.6) score += 40;
-    else if (alert.sentiment_score < -0.3) score += 25;
-    else if (alert.sentiment_score < 0) score += 10;
-  }
-  
-  // Segment-based scoring
-  if (alert.primarySegment) {
-    switch (alert.primarySegment) {
-      case 'urgent_response':
-        score += 50; // 緊急対応は最高リスク
-        break;
-      case 'churn_risk':
-        score += 40; // 解約リスクは高リスク
-        break;
-      case 'competitive_threat':
-        score += 25; // 競合脅威は中リスク
-        break;
-      case 'contract_related':
-        score += 15; // 契約関連は低リスク
-        break;
-      case 'revenue_opportunity':
-        score += 10; // 売上機会は最低リスク
-        break;
-      case 'other':
-        score += 5; // その他は最低リスク
-        break;
-    }
-  }
-  
-  // Keyword-based scoring - Use helper function
-  const phrasesArray = getPhrasesAsArray(alert.phrases);
-  if (phrasesArray.length > 0) {
-    const highRiskKeywords = ['解約', 'キャンセル', '中止', '不満', '問題', 'トラブル'];
-    const mediumRiskKeywords = ['検討', '比較', '見直し', '変更'];
-    
-    phrasesArray.forEach(phrase => {
-      if (highRiskKeywords.some(keyword => phrase.includes(keyword))) {
-        score += 15;
-      } else if (mediumRiskKeywords.some(keyword => phrase.includes(keyword))) {
-        score += 8;
-      }
-    });
-  }
-  
-  // Negative flag bonus
-  if (alert.negative_flag) score += 10;
-  
-  return Math.min(score, 100); // Cap at 100
-};
-*/
-
-// Generate risk summary based on detected patterns
-const generateDetectionReason = (alert: Alert): string => {
-  const reasons: string[] = [];
-  
-  // キーワード検知理由 - Use helper function
-  const phrasesArray = getPhrasesAsArray(alert.phrases);
-  if (phrasesArray.length > 0) {
-    const highRiskKeywords = ['解約', 'キャンセル', '中止', '不満', '問題', 'トラブル'];
-    const mediumRiskKeywords = ['検討', '比較', '見直し', '変更'];
-    
-    const highRiskFound = phrasesArray.filter(phrase => 
-      highRiskKeywords.some(keyword => phrase.includes(keyword))
-    );
-    const mediumRiskFound = phrasesArray.filter(phrase => 
-      mediumRiskKeywords.some(keyword => phrase.includes(keyword))
-    );
-    
-    if (highRiskFound.length > 0) {
-      reasons.push(`高リスクキーワード「${highRiskFound.slice(0, 2).join('、')}」を検知`);
-    } else if (mediumRiskFound.length > 0) {
-      reasons.push(`注意キーワード「${mediumRiskFound.slice(0, 2).join('、')}」を検知`);
-    }
-  }
-  
-  // 感情分析理由
-  if (alert.sentiment_score && alert.sentiment_score < -0.3) {
-    reasons.push(`ネガティブ感情を検知（スコア: ${alert.sentiment_score.toFixed(2)}）`);
-  }
-  
-  // セグメント検知理由
-  if (alert.primarySegment) {
-    switch (alert.primarySegment) {
-      case 'urgent_response':
-        reasons.push('緊急対応パターンを検知');
-        break;
-      case 'churn_risk':
-        reasons.push('解約リスクパターンを検知');
-        break;
-      case 'competitive_threat':
-        reasons.push('競合脅威パターンを検知');
-        break;
-      case 'contract_related':
-        reasons.push('契約関連パターンを検知');
-        break;
-      case 'revenue_opportunity':
-        reasons.push('売上機会パターンを検知');
-        break;
-      case 'other':
-        reasons.push('その他のパターンを検知');
-        break;
-    }
-    
-    // 信頼度も表示
-    if (alert.segmentConfidence) {
-      reasons.push(`信頼度: ${(alert.segmentConfidence * 100).toFixed(0)}%`);
-    }
-  }
-  
-  // ネガティブフラグ
-  if (alert.negative_flag) {
-    reasons.push('ネガティブフラグが設定されています');
-  }
-  
-  return reasons.length > 0 ? reasons.join('、') : 'リスク要因が特定されていません';
-};
 
 // 3段階リスクレベル
 const getRiskLevel = (score: number): { level: string; label: string; color: string } => {
@@ -190,13 +49,7 @@ const extractAssigneeEmail = (alert: any): string => {
   }
 
   // Internal domains for filtering
-  const internalDomains = [
-    'fittio.co.jp', 'gra-m.com', 'withwork.co.jp', 'cross-c.co.jp',
-    'propworks.co.jp', 'cross-m.co.jp', 'cm-group.co.jp', 'shoppers-eye.co.jp',
-    'd-and-m.co.jp', 'medi-l.com', 'metasite.co.jp', 'infidex.co.jp',
-    'excrie.co.jp', 'alternaex.co.jp', 'cmg.traffics.jp', 'tokyogets.com',
-    'pathcrie.co.jp', 'reech.co.jp'
-  ];
+  const internalDomains = INTERNAL_EMAIL_DOMAINS;
 
   // Try to extract from emails array
   if (alert.emails && Array.isArray(alert.emails)) {
@@ -257,12 +110,6 @@ const extractAssigneeEmail = (alert: any): string => {
   return '未割り当て';
 };
 
-// 顧客名から内部ドメインを除外
-const isExternalCustomer = (customer: string): boolean => {
-  const domain = customer.split('@')[1];
-  return !domain || !INTERNAL_DOMAINS.includes(domain);
-};
-
 export default function AlertsPage() {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -300,7 +147,6 @@ export default function AlertsPage() {
     search: searchQuery,
   };
 
-  const severityToLevel = (sev: string) => sev === 'A' ? 'high' : sev === 'B' ? 'medium' : sev === 'C' ? 'low' : '';
   const levelToSeverity = (lvl?: string) => lvl === 'high' ? 'A' : lvl === 'medium' ? 'B' : 'C';
   const levelToSentiment = (lvl?: string) => lvl === 'high' ? -0.8 : lvl === 'medium' ? -0.4 : 0.2;
 
@@ -313,7 +159,6 @@ export default function AlertsPage() {
       if (filters.status !== 'all') params.set('status', filters.status === 'unhandled' ? '新規' : filters.status === 'in_progress' ? '対応中' : '解決済み');
       // 新しい重要度フィルタロジック
       if (filters.severity !== 'all') {
-        console.log('🔍 Debug: Applying severity filter:', filters.severity);
         params.set('severity', filters.severity);
       }
       params.set('limit', '20');
@@ -322,24 +167,10 @@ export default function AlertsPage() {
       // Note: Date filtering removed since data is fixed to 2025/7/7-7/14
       
       const apiUrl = `/api/alerts?${params.toString()}`;
-      console.log('🔍 Debug: Fetching alerts from:', apiUrl);
       const resp = await fetch(apiUrl);
       if (!resp.ok) throw new Error(`Failed ${resp.status}`);
       const data = await resp.json();
-      console.log('🔍 Debug: API response:', {
-        url: apiUrl,
-        alertCount: data.alerts?.length || 0,
-        total: data.pagination?.total || 0,
-        firstAlertScore: data.alerts?.[0]?.urgencyScore || 'N/A',
-        allScores: data.alerts?.map((a: any) => a.urgencyScore).slice(0, 10) || [],
-        severityFilter: filters.severity
-      });
-      
-      console.log('🔍 Debug: API response success:', data.success);
-      console.log('🔍 Debug: API alert count:', data.alerts?.length);
-      console.log('🔍 Debug: First alert:', data.alerts?.[0]);
-      console.log('🔍 Debug: Segment counts:', data.segmentCounts);
-      
+
       type AlertApiRow = Record<string, unknown>;
       const rows: AlertApiRow[] = Array.isArray(data.alerts) ? (data.alerts as AlertApiRow[]) : [];
       const mapped: Alert[] = rows.map((row) => {
@@ -396,50 +227,11 @@ export default function AlertsPage() {
         
         // Use API-calculated urgency score directly (no frontend calculation needed)
         alert.detection_score = alert.urgencyScore;
-        
-        // Debug log for first few alerts (use index instead of mapped.length)
-        const currentIndex = rows.findIndex(r => r === row);
-        if (currentIndex < 3) {
-          console.log('🔍 Debug: Alert mapping:', {
-            subject: alert.subject?.substring(0, 30),
-            raw_urgencyScore: row.urgencyScore,
-            raw_urgencyScore_type: typeof row.urgencyScore,
-            raw_detection_score: row.detection_score,
-            raw_detection_score_type: typeof row.detection_score,
-            mapped_urgencyScore: alert.urgencyScore,
-            mapped_detection_score: alert.detection_score,
-            final_detection_score: alert.detection_score
-          });
-        }
-        
         return alert;
       });
       
-      console.log('🔍 Debug: Mapped alert count:', mapped.length);
-      console.log('🔍 Debug: First mapped alert:', mapped[0]);
-      if (mapped.length > 0) {
-        console.log('🔍 Debug: Alert scores:', mapped.slice(0, 3).map(a => ({
-          subject: a.subject?.substring(0, 50),
-          primarySegment: a.primarySegment,
-          urgencyScore: a.urgencyScore,
-          detection_score: a.detection_score
-        })));
-      }
-      
       setAlerts(mapped);
-      
-      // デバッグ: マッピング後のアラート件数とスコア分布を確認
-      console.log('🔍 Debug: Mapped alerts:', {
-        mappedCount: mapped.length,
-        apiTotal: data.pagination?.total || 0,
-        scoreDistribution: mapped.reduce((acc: Record<number, number>, alert) => {
-          const score = alert.urgencyScore || 0;
-          acc[score] = (acc[score] || 0) + 1;
-          return acc;
-        }, {}),
-        severityFilter: filters.severity
-      });
-      
+
       // セグメントフィルタはAPIで処理されるため、フロントエンドフィルタは不要
       const filteredMapped = mapped;
       
@@ -489,21 +281,7 @@ export default function AlertsPage() {
 
   // Filter alerts based on current filters and segment selection
   const filteredAlerts = useMemo(() => {
-    console.log('🔍 Debug: Starting filter - Total alerts:', alerts.length);
-    
-    let filtered = alerts.filter(alert => {
-      const riskScore = alert.detection_score || alert.urgencyScore || 0;
-      
-      if (alert.subject?.includes('昨夜は')) {
-        console.log('🔍 Debug: Alert filter check for "昨夜は":', {
-          subject: alert.subject?.substring(0, 50),
-          detection_score: alert.detection_score,
-          urgencyScore: alert.urgencyScore,
-          calculated: 'N/A (using API score)',
-          finalScore: riskScore,
-          passes: riskScore >= 30
-        });
-      }
+    const filtered = alerts.filter(alert => {
       
       // APIで重要度フィルタが適用されるため、フロントエンドでは追加フィルタ不要
       
@@ -523,15 +301,8 @@ export default function AlertsPage() {
     // セグメントフィルタはAPIで処理されるため、フロントエンドでは不要
     // if (segmentFilter) { ... }
 
-    console.log('🔍 Debug: Final filtered count:', filtered.length, 'out of', alerts.length);
-    console.log('🔍 Debug: Final filtered score distribution:', filtered.reduce((acc: Record<number, number>, alert) => {
-      const score = alert.urgencyScore || alert.detection_score || 0;
-      acc[score] = (acc[score] || 0) + 1;
-      return acc;
-    }, {}));
-    
     return filtered;
-  }, [alerts, segmentFilter, searchQuery]);
+  }, [alerts, searchQuery]);
 
   // Calculate segment counts - total counts across all alerts, not just current page
   const calculateTotalSegmentCounts = useCallback(async () => {
@@ -560,12 +331,7 @@ export default function AlertsPage() {
   // Only calculate segment counts once when component mounts
   useEffect(() => {
     calculateTotalSegmentCounts();
-  }, []); // Remove dependency to prevent recalculation
-
-  // セグメント表示用（APIでフィルタ済みのため、そのまま使用）
-  const highRiskAlerts = useMemo(() => {
-    return filteredAlerts; // APIで適切にフィルタされているため、追加フィルタ不要
-  }, [filteredAlerts]);
+  }, [calculateTotalSegmentCounts]);
 
   const aiSegments = useMemo(() => {
     return [
@@ -713,7 +479,6 @@ export default function AlertsPage() {
               {filteredAlerts.map((alert) => {
                 const riskScore = alert.detection_score || alert.urgencyScore || 0;
                 const riskLevel = getRiskLevel(riskScore);
-                const detectionReason = generateDetectionReason(alert);
                 // APIから返される担当者情報を優先、フォールバックで抽出関数を使用
                 const assigneeEmail = alert.assignee || extractAssigneeEmail(alert);
                 const shouldShowSegments = true; // APIでフィルタ済みのため、全て表示

@@ -60,3 +60,4 @@ export function DetectionReasons({ reasons, score, className = "" }: DetectionRe
     </div>
   );
 }
+
