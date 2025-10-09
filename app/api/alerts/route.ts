@@ -126,12 +126,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1)
-    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10), 1), 100)
+    const requestedLimit = parseInt(searchParams.get('limit') || '20', 10)
+    const normalizedLimit = Number.isFinite(requestedLimit) ? requestedLimit : 20
+    const limitCap = searchParams.get('light') === '1' ? 10000 : 100
+    const limit = Math.min(Math.max(normalizedLimit, 1), limitCap)
     const search = searchParams.get('search')?.trim() || ''
     const segment = searchParams.get('segment')?.trim() || ''
     const status = searchParams.get('status')?.trim() || ''
     const severity = searchParams.get('severity')?.trim() || ''
     const department = searchParams.get('department')?.trim() || ''
+        // ソート機能はフロントエンドで実装
 
     const offset = (page - 1) * limit
     const params: Record<string, unknown> = { limit, offset }
@@ -181,9 +185,6 @@ export async function GET(request: NextRequest) {
           primary_risk_type,
           risk_keywords,
           score,
-          sentiment_label,
-          sentiment_score,
-          negative_flag,
           reply_level,
           is_root,
           source_uri,
@@ -196,26 +197,6 @@ export async function GET(request: NextRequest) {
             ELSE 'other'
           END AS new_primary_segment,
           0.5 AS new_segment_confidence,
-          (
-            CASE
-              WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(緊急|至急)') THEN 50
-              WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(解約|キャンセル)') THEN 40
-              WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(競合|他社)') THEN 25
-              WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(契約|更新)') THEN 15
-              WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(追加|拡張)') THEN 10
-              ELSE 5
-            END
-            + CASE
-                WHEN sentiment_score < -0.6 THEN 40
-                WHEN sentiment_score < -0.3 THEN 25
-                WHEN sentiment_score < 0 THEN 10
-                ELSE 0
-              END
-            + CASE
-                WHEN negative_flag THEN 10
-                ELSE 0
-              END
-          ) AS calculated_urgency_score,
           ROW_NUMBER() OVER (
             PARTITION BY COALESCE(thread_id, CONCAT(IFNULL(subject, ''), '|', IFNULL(\`from\`, '')))
             ORDER BY score DESC, datetime DESC
@@ -235,7 +216,7 @@ export async function GET(request: NextRequest) {
       )
       SELECT *
       FROM Filtered
-      ORDER BY calculated_urgency_score DESC, datetime DESC
+        ORDER BY datetime DESC
       LIMIT @limit OFFSET @offset
     `
 

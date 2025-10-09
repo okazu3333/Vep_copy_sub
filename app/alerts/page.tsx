@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, EmailThread } from '@/types';
-import { AlertTriangle, Brain, Shield, Target, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
+import { Brain, Shield, ChevronLeft, ChevronRight, Clock, AlertCircle, AlertTriangle, Target } from 'lucide-react';
 import { FilterBar, AlertsFilters } from '@/components/ui/FilterBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HighlightText } from '@/components/ui/HighlightText';
 // import { DetectionReasons } from '@/components/ui/DetectionReasons'; // 一覧表示では不使用
 import { INTERNAL_EMAIL_DOMAINS } from '@/lib/constants/internal-domains';
+import { calculateUnifiedScore } from '@/lib/unified-scoring';
+import { cn } from '@/lib/utils';
 
 type SegmentKey = 'urgent_response' | 'churn_risk' | 'competitive_threat' | 'contract_related' | 'revenue_opportunity' | 'other';
 
@@ -31,15 +33,114 @@ interface ThreadMessage {
   in_reply_to?: string | null;
 }
 
-// 3段階リスクレベル
-const getRiskLevel = (score: number): { level: string; label: string; color: string } => {
-  if (score >= 60) {
-    return { level: 'high', label: '危険', color: 'bg-red-100 text-red-800' };
-  } else if (score >= 30) {
-    return { level: 'medium', label: '注意', color: 'bg-yellow-100 text-yellow-800' };
-  } else {
-    return { level: 'low', label: '健全', color: 'bg-green-100 text-green-800' };
+// レガシー関数は削除（unified-scoringからインポート）
+
+// Backend allows up to 10000 records per request when light mode is enabled
+const LIMIT_PER_REQUEST = 10000;
+
+type SegmentCountsState = {
+  urgent_response: number;
+  churn_risk: number;
+  competitive_threat: number;
+  contract_related: number;
+  revenue_opportunity: number;
+  other: number;
+};
+
+const INITIAL_SEGMENT_COUNTS: SegmentCountsState = {
+  urgent_response: 0,
+  churn_risk: 0,
+  competitive_threat: 0,
+  contract_related: 0,
+  revenue_opportunity: 0,
+  other: 0
+};
+
+type AlertApiRow = Record<string, unknown>;
+
+const levelToSeverity = (lvl?: string) => (lvl === 'high' ? 'A' : lvl === 'medium' ? 'B' : 'C');
+const levelToSentiment = (lvl?: string) => (lvl === 'high' ? -0.8 : lvl === 'medium' ? -0.4 : 0.2);
+
+const splitKeywordString = (value: string): string[] =>
+  value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const mapApiRowToAlert = (row: AlertApiRow): Alert => {
+  const keywordCandidates: string[] = [];
+  if (typeof row.keyword === 'string') {
+    keywordCandidates.push(...splitKeywordString(row.keyword));
   }
+  if (Array.isArray(row.phrases)) {
+    keywordCandidates.push(
+      ...(row.phrases as unknown[])
+        .map((phrase) => (typeof phrase === 'string' ? phrase.trim() : ''))
+        .filter(Boolean) as string[]
+    );
+  } else if (typeof row.phrases === 'string') {
+    keywordCandidates.push(...splitKeywordString(row.phrases));
+  }
+  if (Array.isArray((row as any).risk_keywords)) {
+    keywordCandidates.push(
+      ...((row as any).risk_keywords as unknown[])
+        .map((phrase) => (typeof phrase === 'string' ? phrase.trim() : ''))
+        .filter(Boolean) as string[]
+    );
+  } else if (typeof (row as any).risk_keywords === 'string') {
+    keywordCandidates.push(...splitKeywordString((row as any).risk_keywords as string));
+  }
+
+  const keywordPhrases = keywordCandidates.length ? [...new Set(keywordCandidates)] : undefined;
+  const primarySegment = typeof row.primarySegment === 'string' ? (row.primarySegment as SegmentKey) : null;
+  const segmentConfidence = typeof row.segmentConfidence === 'number' ? row.segmentConfidence : 0;
+  const sentimentScore = typeof row.sentiment_score === 'number'
+    ? row.sentiment_score
+    : undefined;
+  const level = typeof row.level === 'string' ? row.level : undefined;
+  const severity = levelToSeverity(level);
+  const sentiment = typeof sentimentScore === 'number' ? sentimentScore : levelToSentiment(level);
+
+  const customer = String(row.customer ?? row.customer_name ?? row.customerEmail ?? row.person ?? 'Unknown');
+
+  const alert: Alert = {
+    id: String(row.id ?? ''),
+    subject: String(row.description ?? row.subject ?? ''),
+    severity,
+    sentiment_score: sentiment,
+    department: String(row.department ?? '営業部'),
+    customer,
+    updated_at: String(row.datetime ?? ''),
+    status: row.status === '新規' || row.status === 'new'
+      ? 'unhandled'
+      : row.status === '対応中'
+      ? 'in_progress'
+      : row.status === '解決済み'
+      ? 'completed'
+      : 'unhandled',
+    ai_summary: keywordPhrases?.length
+      ? `検出: ${keywordPhrases.slice(0, 5).join(', ')}`
+      : String((row as any).messageBody ?? ''),
+    emails: [],
+    company: typeof row.company === 'string' ? row.company : null,
+    detection_score: typeof row.detection_score === 'number' ? row.detection_score : undefined,
+    assignee: (typeof row.assignee === 'string' && row.assignee !== '未割り当て') ? row.assignee : undefined,
+    phrases: keywordPhrases,
+    threadId: typeof row.threadId === 'string' ? row.threadId : (typeof row.thread_id === 'string' ? row.thread_id : null),
+    messageId: typeof row.message_id === 'string' ? row.message_id : null,
+    sentiment_label: (typeof row.sentiment_label === 'string' && ['positive', 'neutral', 'negative'].includes(row.sentiment_label))
+      ? (row.sentiment_label as 'positive' | 'neutral' | 'negative')
+      : null,
+    negative_flag: Boolean(row.negative_flag),
+    primarySegment,
+    segmentConfidence,
+    urgencyScore: typeof row.urgencyScore === 'number' ? row.urgencyScore : undefined,
+    detectionReasons: Array.isArray(row.detectionReasons) ? row.detectionReasons : [],
+    highlightKeywords: Array.isArray(row.highlightKeywords) ? row.highlightKeywords : keywordPhrases ?? [],
+  };
+
+  alert.detection_score = alert.urgencyScore;
+  return alert;
 };
 
 // Extract assignee email from internal senders
@@ -115,9 +216,8 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [segmentCounts, setSegmentCounts] = useState<{urgent_response:number;churn_risk:number;competitive_threat:number;contract_related:number;revenue_opportunity:number;other:number}>({urgent_response:0,churn_risk:0,competitive_threat:0,contract_related:0,revenue_opportunity:0,other:0});
+  const [segmentCounts, setSegmentCounts] = useState<SegmentCountsState>({ ...INITIAL_SEGMENT_COUNTS });
   const [filters, setFilters] = useState({
     severity: 'all',
     status: 'all',
@@ -147,119 +247,111 @@ export default function AlertsPage() {
     search: searchQuery,
   };
 
-  const levelToSeverity = (lvl?: string) => lvl === 'high' ? 'A' : lvl === 'medium' ? 'B' : 'C';
-  const levelToSentiment = (lvl?: string) => lvl === 'high' ? -0.8 : lvl === 'medium' ? -0.4 : 0.2;
-
   const fetchAlerts = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (searchQuery) params.set('search', searchQuery);
-      if (segmentFilter) params.set('segment', segmentFilter);
-      if (filters.status !== 'all') params.set('status', filters.status === 'unhandled' ? '新規' : filters.status === 'in_progress' ? '対応中' : '解決済み');
-      // 新しい重要度フィルタロジック
-      if (filters.severity !== 'all') {
-        params.set('severity', filters.severity);
-      }
-      params.set('limit', '20');
-      params.set('page', String(page));
-      params.set('light', '1');
-      // Note: Date filtering removed since data is fixed to 2025/7/7-7/14
-      
-      const apiUrl = `/api/alerts?${params.toString()}`;
-      const resp = await fetch(apiUrl);
-      if (!resp.ok) throw new Error(`Failed ${resp.status}`);
-      const data = await resp.json();
+      const accumulatedAlerts: Alert[] = [];
+      let totalFromApi = 0;
+      let totalPagesFromApi = 1;
+      let currentPage = 1;
+      let fetchedPages = 0;
+      let segmentCountsSnapshot: SegmentCountsState | null = null;
 
-      type AlertApiRow = Record<string, unknown>;
-      const rows: AlertApiRow[] = Array.isArray(data.alerts) ? (data.alerts as AlertApiRow[]) : [];
-      const mapped: Alert[] = rows.map((row) => {
-        const keywordRaw = row.keyword;
-        const keywordStr = typeof keywordRaw === 'string' ? keywordRaw : '';
-        const keywordPhrases = keywordStr
-          ? keywordStr.split(',').map((s) => s.trim()).filter(Boolean)
-          : (Array.isArray(row.phrases) ? (row.phrases as string[]) : undefined);
-        const primarySegment = typeof row.primarySegment === 'string' ? row.primarySegment as SegmentKey : null;
-        const segmentConfidence = typeof row.segmentConfidence === 'number' ? row.segmentConfidence : 0;
-        const sentimentScore = typeof row.sentiment_score === 'number'
-          ? row.sentiment_score
-          : undefined;
-        const level = typeof row.level === 'string' ? row.level : undefined;
-        const severity = levelToSeverity(level);
-        const sentiment = typeof sentimentScore === 'number' ? sentimentScore : levelToSentiment(level);
-        
-        // APIから取得した顧客名をそのまま使用（APIで既に適切に処理済み）
-        const customer = String(row.customer ?? row.customer_name ?? row.customerEmail ?? row.person ?? 'Unknown');
-        
-        const alert: Alert = {
-          id: String(row.id ?? ''),
-          subject: String(row.description ?? row.subject ?? ''),
-          severity,
-          sentiment_score: sentiment,
-          department: String(row.department ?? '営業部'),
-          customer,
-          updated_at: String(row.datetime ?? ''),
-          status: row.status === '新規' || row.status === 'new'
-            ? 'unhandled'
-            : row.status === '対応中'
-            ? 'in_progress'
-            : row.status === '解決済み'
-            ? 'completed'
-            : 'unhandled',
-          ai_summary: String(keywordStr ? `検出: ${keywordStr}` : (row.messageBody ?? '')),
-          emails: [],
-          company: typeof row.company === 'string' ? row.company : null,
-          detection_score: typeof row.detection_score === 'number' ? row.detection_score : undefined,
-          assignee: (typeof row.assignee === 'string' && row.assignee !== '未割り当て') ? row.assignee : undefined,
-          phrases: keywordPhrases,
-          threadId: typeof row.threadId === 'string' ? row.threadId : (typeof row.thread_id === 'string' ? row.thread_id : null),
-          messageId: typeof row.message_id === 'string' ? row.message_id : null,
-          sentiment_label: (typeof row.sentiment_label === 'string' && ['positive', 'neutral', 'negative'].includes(row.sentiment_label)) 
-            ? row.sentiment_label as 'positive' | 'neutral' | 'negative' 
-            : null,
-          negative_flag: Boolean(row.negative_flag),
-          primarySegment,
-          segmentConfidence,
-          urgencyScore: typeof row.urgencyScore === 'number' ? row.urgencyScore : undefined,
-          detectionReasons: Array.isArray(row.detectionReasons) ? row.detectionReasons : [],
-          highlightKeywords: Array.isArray(row.highlightKeywords) ? row.highlightKeywords : [],
-        };
-        
-        // Use API-calculated urgency score directly (no frontend calculation needed)
-        alert.detection_score = alert.urgencyScore;
-        return alert;
-      });
-      
-      setAlerts(mapped);
+      const buildQueryParams = (pageNumber: number) => {
+        const params = new URLSearchParams();
+        if (searchQuery) params.set('search', searchQuery);
+        if (segmentFilter) params.set('segment', segmentFilter);
+        if (filters.status !== 'all') {
+          const statusParam = filters.status === 'unhandled'
+            ? '新規'
+            : filters.status === 'in_progress'
+            ? '対応中'
+            : '解決済み';
+          params.set('status', statusParam);
+        }
+        params.set('limit', String(LIMIT_PER_REQUEST));
+        params.set('page', String(pageNumber));
+        params.set('light', '1');
+        return params;
+      };
 
-      // セグメントフィルタはAPIで処理されるため、フロントエンドフィルタは不要
-      const filteredMapped = mapped;
-      
-      const pg = data?.pagination;
-      if (pg) {
-        // APIから返される正確な総件数を使用
-        setTotal(Number(pg.total || 0));
-        setTotalPages(Math.ceil(Number(pg.total || 0) / 20));
-      } else {
-        setTotal(filteredMapped.length);
-        setTotalPages(Math.ceil(filteredMapped.length / 20));
-      }
-      if (data?.segmentCounts) {
-        setSegmentCounts({
-          urgent_response: Number(data.segmentCounts.urgent_response || 0),
-          churn_risk: Number(data.segmentCounts.churn_risk || 0),
-          competitive_threat: Number(data.segmentCounts.competitive_threat || 0),
-          contract_related: Number(data.segmentCounts.contract_related || 0),
-          revenue_opportunity: Number(data.segmentCounts.revenue_opportunity || 0),
-          other: Number(data.segmentCounts.other || 0)
+      while (currentPage <= totalPagesFromApi) {
+        const params = buildQueryParams(currentPage);
+        const apiUrl = `/api/alerts?${params.toString()}`;
+        console.log('🌐 APIリクエスト:', apiUrl);
+
+        const resp = await fetch(apiUrl);
+        if (!resp.ok) throw new Error(`Failed ${resp.status}`);
+        const data = await resp.json();
+
+        const rows: AlertApiRow[] = Array.isArray(data.alerts) ? (data.alerts as AlertApiRow[]) : [];
+        const mapped = rows.map(mapApiRowToAlert);
+        accumulatedAlerts.push(...mapped);
+
+        const paginationTotal = Number(data.pagination?.total ?? data.total ?? accumulatedAlerts.length) || 0;
+        const paginationTotalPages = Number(
+          data.pagination?.totalPages ?? (paginationTotal ? Math.ceil(paginationTotal / LIMIT_PER_REQUEST) : 1)
+        );
+
+        console.log('📥 APIレスポンス:', {
+          page: currentPage,
+          success: data.success,
+          alertsCount: mapped.length,
+          total: paginationTotal || null,
+          totalPages: Number.isFinite(paginationTotalPages) && paginationTotalPages > 0 ? paginationTotalPages : null,
+          firstAlert: mapped[0]
+            ? {
+                id: mapped[0].id,
+                subject: mapped[0].subject?.substring(0, 30),
+                score: mapped[0].urgencyScore
+              }
+            : null
         });
+
+        if (!totalFromApi) {
+          totalFromApi = paginationTotal;
+        }
+        if (Number.isFinite(paginationTotalPages) && paginationTotalPages > 0) {
+          totalPagesFromApi = paginationTotalPages;
+        }
+        if (!segmentCountsSnapshot && data?.segmentCounts) {
+          segmentCountsSnapshot = {
+            urgent_response: Number(data.segmentCounts.urgent_response || 0),
+            churn_risk: Number(data.segmentCounts.churn_risk || 0),
+            competitive_threat: Number(data.segmentCounts.competitive_threat || 0),
+            contract_related: Number(data.segmentCounts.contract_related || 0),
+            revenue_opportunity: Number(data.segmentCounts.revenue_opportunity || 0),
+            other: Number(data.segmentCounts.other || 0)
+          };
+        }
+
+        fetchedPages += 1;
+
+        const effectiveLimit = Number(data.pagination?.limit ?? LIMIT_PER_REQUEST);
+        const fetchedAllRecords = totalFromApi && accumulatedAlerts.length >= totalFromApi;
+        const fetchedLessThanLimit = mapped.length < effectiveLimit;
+        if (fetchedAllRecords || fetchedLessThanLimit) {
+          break;
+        }
+
+        currentPage += 1;
       }
+
+      console.log('✅ 全ページ取得完了:', {
+        requestedPages: fetchedPages,
+        totalFetched: accumulatedAlerts.length,
+        apiTotal: totalFromApi
+      });
+
+      setAlerts(accumulatedAlerts);
+      setTotal(totalFromApi || accumulatedAlerts.length);
+      setSegmentCounts(segmentCountsSnapshot ?? { ...INITIAL_SEGMENT_COUNTS });
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, segmentFilter, filters.status, filters.severity, page]);
+  }, [searchQuery, filters.status, segmentFilter]);
 
   useEffect(() => {
     fetchAlerts();
@@ -279,30 +371,70 @@ export default function AlertsPage() {
     }
   }, [filters.status, filters.severity, searchQuery, page]);
 
-  // Filter alerts based on current filters and segment selection
+  // フロントエンドでソートとページネーションを実行
   const filteredAlerts = useMemo(() => {
-    const filtered = alerts.filter(alert => {
-      
-      // APIで重要度フィルタが適用されるため、フロントエンドでは追加フィルタ不要
-      
-      // Apply search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch = 
-          alert.customer?.toLowerCase().includes(query) ||
-          alert.subject?.toLowerCase().includes(query) ||
-          alert.id?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
-      
-      return true;
-    });
+    try {
+      console.log('🔍 ソート開始 - 総アラート数:', alerts.length);
+      console.log('🔍 セグメントフィルター:', segmentFilter || 'なし（APIで処理済み）');
+      console.log('🔍 ソート順:', filters.severity);
+      console.log('🔍 現在ページ:', page);
 
-    // セグメントフィルタはAPIで処理されるため、フロントエンドでは不要
-    // if (segmentFilter) { ... }
+      const alertsWithScores = alerts.map(alert => ({
+        alert,
+        unifiedScore: calculateUnifiedScore(alert)
+      }));
 
-    return filtered;
-  }, [alerts, searchQuery]);
+      const sortedAlerts = alertsWithScores.sort((a, b) => {
+        if (filters.severity === 'desc') {
+          return b.unifiedScore.score - a.unifiedScore.score;
+        }
+        if (filters.severity === 'asc') {
+          return a.unifiedScore.score - b.unifiedScore.score;
+        }
+        if (filters.severity === 'all' && segmentFilter) {
+          return b.unifiedScore.score - a.unifiedScore.score;
+        }
+        return 0;
+      });
+
+      console.log('🔄 ソート順:', filters.severity);
+      console.log('🔄 セグメントフィルター:', segmentFilter);
+      console.log('🔄 自動ソート適用:', filters.severity === 'all' && segmentFilter ? '降順（自動）' : filters.severity);
+
+      const sortLogic = filters.severity === 'desc'
+        ? 'b.score - a.score (降順)'
+        : filters.severity === 'asc'
+        ? 'a.score - b.score (昇順)'
+        : filters.severity === 'all' && segmentFilter
+        ? 'b.score - a.score (自動降順)'
+        : 'ソートなし';
+      console.log('🔄 ソートロジック:', sortLogic);
+
+      console.log('🔄 上位5件のスコア:');
+      sortedAlerts.slice(0, 5).forEach((item, index) => {
+        console.log(`  ${index + 1}. スコア: ${item.unifiedScore.score}, セグメント: ${item.alert.primarySegment}, 件名: ${item.alert.subject?.substring(0, 30)}`);
+      });
+
+      const startIndex = (page - 1) * 20;
+      const endIndex = startIndex + 20;
+      const result = sortedAlerts.slice(startIndex, endIndex).map(item => item.alert);
+
+      console.log('📄 ページネーション - 開始インデックス:', startIndex);
+      console.log('📄 ページネーション - 終了インデックス:', endIndex);
+      console.log('📄 ページネーション - 結果件数:', result.length);
+      console.log('📄 ページネーション - 総フィルター件数:', sortedAlerts.length);
+
+      return result;
+    } catch (error) {
+      console.error('Error in filteredAlerts:', error);
+      const startIndex = (page - 1) * 20;
+      return alerts.slice(startIndex, startIndex + 20);
+    }
+  }, [alerts, filters.severity, segmentFilter, page]);
+
+  const totalFilteredAlerts = useMemo(() => alerts.length, [alerts]);
+  const totalPagesCalculated = useMemo(() => Math.ceil(totalFilteredAlerts / 20), [totalFilteredAlerts]);
+
 
   // Calculate segment counts - total counts across all alerts, not just current page
   const calculateTotalSegmentCounts = useCallback(async () => {
@@ -324,7 +456,7 @@ export default function AlertsPage() {
     } catch (error) {
       console.error('Failed to calculate segment counts:', error);
       // Set fallback counts to prevent inconsistency
-      setSegmentCounts({ urgent_response: 0, churn_risk: 0, competitive_threat: 0, contract_related: 0, revenue_opportunity: 0, other: 0 });
+      setSegmentCounts({ ...INITIAL_SEGMENT_COUNTS });
     }
   }, []);
 
@@ -444,6 +576,7 @@ export default function AlertsPage() {
               })}
             </CardContent>
           </Card>
+
         </div>
 
         {/* Main Content */}
@@ -477,8 +610,19 @@ export default function AlertsPage() {
           ) : (
             <div className="space-y-4">
               {filteredAlerts.map((alert) => {
-                const riskScore = alert.detection_score || alert.urgencyScore || 0;
-                const riskLevel = getRiskLevel(riskScore);
+                // 統一スコアリングシステムを使用（モーダルと同じ計算ロジック）
+                const unifiedScore = calculateUnifiedScore(alert);
+                const finalScore = unifiedScore.score;
+                
+                // スコアに基づいてリスクレベルとカテゴリを決定
+                const riskLevel = {
+                  level: unifiedScore.level.toLowerCase(),
+                  label: unifiedScore.label,
+                  color: unifiedScore.color
+                };
+                
+                // カテゴリをスコアに基づいて決定
+                const category = unifiedScore.category;
                 // APIから返される担当者情報を優先、フォールバックで抽出関数を使用
                 const assigneeEmail = alert.assignee || extractAssigneeEmail(alert);
                 const shouldShowSegments = true; // APIでフィルタ済みのため、全て表示
@@ -487,14 +631,14 @@ export default function AlertsPage() {
                   <div key={alert.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => openDetail(alert)}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-lg flex-1 pr-4">
                             <HighlightText 
                               text={alert.subject || '件名なし'} 
                               keywords={alert.highlightKeywords || []}
                             />
                           </h3>
-                          <Badge className={riskLevel.color}>
+                          <Badge className={cn(riskLevel.color, "flex-shrink-0")}>
                             {riskLevel.label}
                           </Badge>
                         </div>
@@ -508,27 +652,44 @@ export default function AlertsPage() {
                           
                           {/* 検知理由の詳細表示は削除（モーダルで確認可能） */}
                           
+                          {/* セグメント表示：スコアに応じて表示方法を変更 */}
                           {shouldShowSegments && alert.primarySegment && (
                             <div className="flex gap-2 items-center">
                               {(() => {
                                 const segment = aiSegments.find(s => s.label === alert.primarySegment);
-                                return segment ? (
-                                  <Badge className={segment.color} variant="secondary">
-                                    {segment.name}
-                                  </Badge>
-                                ) : null;
+                                if (!segment) return null;
+                                
+                                // スコアが50以上：目立つ表示
+                                if (finalScore >= 50) {
+                                  return (
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border">
+                                      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                                      <span>{segment.name}</span>
+                                    </div>
+                                  );
+                                }
+                                // スコアが50未満：控えめな表示
+                                else {
+                                  return (
+                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                      <span>分類: {segment.name}</span>
+                                    </div>
+                                  );
+                                }
                               })()}
-                              {/* セグメント信頼度は削除（詳細はモーダルで確認） */}
                             </div>
                           )}
                         </div>
                       </div>
                       
-                      <div className="text-right ml-4">
+                      <div className="text-right ml-4 min-w-[120px]">
                         <div className="text-2xl font-bold text-red-600 mb-1">
-                          {riskScore}
+                          {finalScore}
                         </div>
                         <div className="text-xs text-gray-500">リスクスコア</div>
+                        <div className="text-xs text-gray-400 truncate" title={category}>
+                          {category}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -538,7 +699,7 @@ export default function AlertsPage() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPagesCalculated > 1 && (
             <div className="flex justify-center items-center gap-2">
               <Button
                 variant="outline"
@@ -550,13 +711,13 @@ export default function AlertsPage() {
                 前へ
               </Button>
               <span className="text-sm">
-                {page} / {totalPages}
+                {page} / {totalPagesCalculated}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(page + 1)}
-                disabled={page >= totalPages}
+                disabled={page >= totalPagesCalculated}
               >
                 次へ
                 <ChevronRight className="h-4 w-4" />

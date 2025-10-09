@@ -145,8 +145,12 @@ ${mockCustomerRiskData.riskDistribution.map((risk, index) =>
       try {
         const response = await fetch(`/api/reports?period=${selectedPeriod}`);
         if (response.ok) {
-          const data = await response.json();
-          setReport(data);
+          const json = await response.json();
+          if (json.success && json.data) {
+            setReport(json.data);
+          } else {
+            throw new Error('Invalid API response format');
+          }
         } else {
           // Set fallback data if API response is not ok
           setReport({

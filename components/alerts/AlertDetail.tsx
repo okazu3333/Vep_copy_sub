@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/types';
 import { X, MessageCircle, TrendingUp, MoreHorizontal, Send, Hash, User, Building2, Mail, ArrowRight, ArrowLeft, Reply, Clock } from 'lucide-react';
 import { HighlightText } from '@/components/ui/HighlightText';
-import { DetectionReasons } from '@/components/ui/DetectionReasons';
 import { cn } from '@/lib/utils';
+import { DEFAULT_WEIGHTS } from '@/lib/advanced-scoring';
+import { calculateUnifiedScore } from '@/lib/unified-scoring';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -24,6 +25,7 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
   const [status, setStatus] = useState(alert.status);
   const [loadingBodyIds, setLoadingBodyIds] = useState<Record<string, boolean>>({});
   const [bodyCache, setBodyCache] = useState<Record<string, string>>({});
+  const [currentWeights] = useState(DEFAULT_WEIGHTS);
 
   // 社内ドメイン判定（暫定リスト）
   const INTERNAL_DOMAINS = INTERNAL_EMAIL_DOMAINS;
@@ -100,6 +102,34 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
   const urgencyScore = typeof alert.urgencyScore === 'number' ? Math.round(alert.urgencyScore) : undefined;
   const apiDetectionReasons = alert.detectionReasons || [];
   const apiHighlightKeywords = alert.highlightKeywords || [];
+  
+  const firstEmailSubject = (Array.isArray(alert.emails) && alert.emails[0] && alert.emails[0].subject) ? alert.emails[0].subject : undefined;
+  const sentimentLabel = (alert as any).sentiment_label as string | null | undefined;
+  const sentimentScore = (alert as any).sentiment_score as number | null | undefined;
+  
+  // phrasesフィールドからもキーワードを取得
+  const phrasesKeywords = Array.isArray(alert.phrases) ? alert.phrases : 
+                         (typeof alert.phrases === 'string' && alert.phrases) ? 
+                         alert.phrases.split(',').map(s => s.trim()).filter(Boolean) : [];
+  
+  // 検知ロジックの重み（UI表示用）
+  const RULE_WEIGHTS: Record<string, number> = {
+    'クレーム': 1.0, '苦情': 1.0, '不満': 1.0,
+    '緊急': 1.5, '至急': 1.5, '急ぎ': 1.5,
+    'キャンセル': 1.2, '解約': 1.2,
+    '高い': 0.8, '料金': 0.8, '価格': 0.8,
+    '不良': 1.3, '不具合': 1.3, '故障': 1.3,
+    'まだですか': 1.1, '対応して': 1.1, '返事がない': 1.1,
+  };
+
+  // キーワードを統合（重複除去）
+  const allKeywords = [...new Set([...apiHighlightKeywords, ...phrasesKeywords])];
+
+  // 統一されたスコア計算（一覧とモーダルで一貫性を保つ）
+  const unifiedScore = calculateUnifiedScore(alert, currentWeights);
+  
+  // 統一されたスコアを使用（調整可能）
+  const finalScore = unifiedScore.score;
 
   // メールを時系列順にソートし、リプライ階層を構築
   const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
@@ -187,28 +217,15 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
     }
   };
 
-  // 検知ロジックの重み（UI表示用）
-  const RULE_WEIGHTS: Record<string, number> = {
-    'クレーム': 1.0, '苦情': 1.0, '不満': 1.0,
-    '緊急': 1.5, '至急': 1.5, '急ぎ': 1.5,
-    'キャンセル': 1.2, '解約': 1.2,
-    '高い': 0.8, '料金': 0.8, '価格': 0.8,
-    '不良': 1.3, '不具合': 1.3, '故障': 1.3,
-    'まだですか': 1.1, '対応して': 1.1, '返事がない': 1.1,
-  };
-  
   const riskPhrases: string[] = Array.isArray(alert.phrases) ? alert.phrases : [];
   const matched = riskPhrases.filter(p => RULE_WEIGHTS[p] !== undefined);
   const ruleScore = matched.reduce((acc, p) => acc + (RULE_WEIGHTS[p] || 0), 0);
   const computedScore = typeof detectionScore === 'number' ? detectionScore : Math.min(100, Math.round(ruleScore * 30));
 
-  const firstEmailSubject = (allEmails[0] && allEmails[0].subject) ? allEmails[0].subject : undefined;
-  const sentimentLabel = (alert as any).sentiment_label as string | null | undefined;
-  const sentimentScore = (alert as any).sentiment_score as number | null | undefined;
   const internalAssignee = getInternalAssignee();
 
   // 検知スコアが0の場合の処理
-  const hasDetection = computedScore > 0;
+  const hasDetection = finalScore > 0;
   const displaySeverity = hasDetection ? alert.severity : 'C';
 
   return (
@@ -253,8 +270,8 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                 <CardHeader className="py-3 px-4">
                   <CardTitle className="text-base flex items-center justify-between">
                     <span>アラート概要</span>
-                    <Badge className={cn('text-xs', getSeverityColor(displaySeverity))}>
-                      {displaySeverity === 'A' ? 'クリティカル' : displaySeverity === 'B' ? '重要' : '注意'}
+                    <Badge className={cn('text-xs', unifiedScore.color)}>
+                      {unifiedScore.label}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -303,7 +320,7 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                     <div>
                       <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>検知スコア</div>
                       <div className={cn("font-bold text-lg", hasDetection ? "text-red-800" : "text-gray-600")}>
-                        {computedScore}/100
+                        {finalScore}/100
                       </div>
                     </div>
                     <div>
@@ -314,107 +331,81 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
                     </div>
                   </div>
 
-                  {/* 検知理由の説明 */}
-                  <div className={cn("p-3 rounded-lg border", hasDetection ? "bg-red-25 border-red-200" : "bg-gray-25 border-gray-200")}>
-                    <div className={cn("text-xs font-medium mb-2", hasDetection ? "text-red-700" : "text-gray-600")}>
-                      なぜこのスコアになったのか
-                    </div>
-                    <div className={cn("text-sm leading-relaxed", hasDetection ? "text-red-800" : "text-gray-700")}>
+                  {/* 簡潔な検知理由 */}
+                  <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                    <div className="text-xs text-slate-600 mb-1">検知理由</div>
+                    <div className="text-sm text-slate-800">
                       {hasDetection ? (
                         <>
-                          このアラートは<span className="font-semibold text-red-900">リスクレベル{urgencyScore || computedScore}点</span>と判定されました。
-                          {apiDetectionReasons.length > 0 && (
-                            <>
-                              システムが「<span className="font-semibold">{apiDetectionReasons.join('」「')}</span>」を検知し、
-                            </>
+                          {allKeywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-1">
+                              {allKeywords.slice(0, 3).map((keyword, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+                                  {keyword}
+                                </span>
+                              ))}
+                              {allKeywords.length > 3 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                  +{allKeywords.length - 3}個
+                                </span>
+                              )}
+                            </div>
                           )}
-                          {apiHighlightKeywords.length > 0 && (
-                            <>
-                              メール内容から「<span className="font-semibold">{apiHighlightKeywords.join('」「')}</span>」などの
-                              <span className="font-semibold text-red-900">注意が必要なキーワード</span>が検出されています。
-                            </>
-                          )}
-                          {sentimentScore && sentimentScore < -0.3 && (
-                            <>
-                              また、感情分析により<span className="font-semibold text-red-900">ネガティブな感情</span>
-                              （スコア: {sentimentScore.toFixed(2)}）が検出されており、
-                            </>
-                          )}
-                          {(urgencyScore || computedScore) >= 80 ? (
-                            <span className="font-semibold text-red-900">緊急対応が必要</span>
-                          ) : (urgencyScore || computedScore) >= 50 ? (
-                            <span className="font-semibold text-orange-700">早急な対応が推奨</span>
-                          ) : (urgencyScore || computedScore) >= 30 ? (
-                            <span className="font-semibold text-yellow-700">注意深い対応が必要</span>
-                          ) : (
-                            <span className="font-semibold text-blue-700">通常対応で問題なし</span>
-                          )}
-                          な状況と判断されます。
+                          <div className="text-xs text-slate-500">
+                            {unifiedScore.explanation.slice(0, 2).join('、')}
+                          </div>
                         </>
                       ) : (
-                        <>
-                          このメールは<span className="font-semibold text-gray-700">通常のコミュニケーション</span>と判定されました。
-                          リスクを示すキーワードや強いネガティブ感情は検出されていないため、
-                          <span className="font-semibold text-green-700">標準的な対応</span>で問題ありません。
-                        </>
+                        <span className="text-slate-500">リスク要因なし</span>
                       )}
                     </div>
                   </div>
 
-                  {/* 新しいAPIベースの検知理由表示 */}
-                  {apiDetectionReasons.length > 0 && (
-                    <DetectionReasons 
-                      reasons={apiDetectionReasons} 
-                      score={urgencyScore || computedScore}
-                    />
-                  )}
 
-                  {/* 従来の検知フレーズ詳細（フォールバック） */}
-                  {matched.length > 0 && apiDetectionReasons.length === 0 && (
-                    <div>
-                      <div className="text-xs text-red-600 mb-2">検知されたリスクキーワード</div>
-                      <div className="flex flex-wrap gap-1">
-                        {matched.map((phrase, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs bg-red-100 text-red-700 border-red-200">
-                            {phrase} (重要度×{RULE_WEIGHTS[phrase]})
-                          </Badge>
-                        ))}
+                  {/* コンパクトなスコア詳細表示 */}
+                  <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200">
+                    <div className="text-xs font-medium text-slate-700 mb-2">スコア内訳</div>
+                    <div className="space-y-1 text-xs text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>キーワード: {unifiedScore.breakdown.keywordScore}</span>
+                        <span>×{currentWeights.keywordWeight} = {Math.round(unifiedScore.breakdown.keywordScore * currentWeights.keywordWeight)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>感情: {unifiedScore.breakdown.sentimentScore}</span>
+                        <span>×{currentWeights.sentimentWeight} = {Math.round(unifiedScore.breakdown.sentimentScore * currentWeights.sentimentWeight)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>相乗効果: +{unifiedScore.breakdown.synergyScore}</span>
+                        <span>+{unifiedScore.breakdown.synergyScore}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>緊急度: ×{unifiedScore.breakdown.urgencyBoost}</span>
+                        <span>×{unifiedScore.breakdown.urgencyBoost}</span>
+                      </div>
+                      <div className="flex items-center justify-between font-medium text-slate-800 border-t pt-1">
+                        <span>最終スコア: {finalScore}</span>
+                        <span>= {Math.round((unifiedScore.breakdown.keywordScore * currentWeights.keywordWeight + unifiedScore.breakdown.sentimentScore * currentWeights.sentimentWeight + unifiedScore.breakdown.synergyScore) * unifiedScore.breakdown.urgencyBoost)}</span>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {/* 対応推奨アクション */}
+
+
+                  {/* 簡潔な推奨アクション */}
                   {hasDetection && (
-                    <div className={cn("p-3 rounded-lg border-l-4", 
-                      (urgencyScore || computedScore) >= 80 ? "bg-red-50 border-red-400" :
-                      (urgencyScore || computedScore) >= 50 ? "bg-orange-50 border-orange-400" :
-                      "bg-yellow-50 border-yellow-400"
-                    )}>
-                      <div className={cn("text-xs font-medium mb-1",
-                        (urgencyScore || computedScore) >= 80 ? "text-red-700" :
-                        (urgencyScore || computedScore) >= 50 ? "text-orange-700" :
-                        "text-yellow-700"
-                      )}>
-                        推奨アクション
-                      </div>
-                      <div className={cn("text-sm",
-                        (urgencyScore || computedScore) >= 80 ? "text-red-800" :
-                        (urgencyScore || computedScore) >= 50 ? "text-orange-800" :
-                        "text-yellow-800"
-                      )}>
-                        {(urgencyScore || computedScore) >= 80 ? (
-                          "即座に顧客に連絡を取り、問題の詳細を確認してください。必要に応じて上司やチームリーダーに報告し、迅速な解決策を検討してください。"
-                        ) : (urgencyScore || computedScore) >= 50 ? (
-                          "24時間以内に顧客に連絡を取り、状況を確認してください。問題が深刻化する前に適切な対応を行うことが重要です。"
-                        ) : (
-                          "通常の業務時間内に対応してください。顧客の要望や懸念を丁寧に聞き取り、適切なサポートを提供してください。"
-                        )}
+                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                      <div className="text-xs font-medium text-blue-700 mb-1">推奨アクション</div>
+                      <div className="text-sm text-blue-800">
+                        {finalScore >= 80 ? "即座に連絡・報告" : 
+                         finalScore >= 50 ? "24時間以内に対応" : 
+                         "通常業務時間内に対応"}
                       </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
+
 
             {/* Communication History */}
             <Card>

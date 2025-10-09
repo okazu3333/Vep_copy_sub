@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const highRiskQuery = `
       SELECT 
         company_domain,
-        COALESCE(company_name, company_domain) as company_name,
+        company_domain as company_name,
         COUNT(*) as total_messages,
         COUNT(CASE WHEN negative_flag = true THEN 1 END) as negative_count,
         COUNT(CASE WHEN sentiment_label = 'negative' THEN 1 END) as negative_sentiment,
@@ -27,11 +27,21 @@ export async function GET(request: NextRequest) {
         'propworks.co.jp', 'cross-m.co.jp', 'cm-group.co.jp', 'shoppers-eye.co.jp',
         'd-and-m.co.jp', 'medi-l.com', 'metasite.co.jp', 'infidex.co.jp',
         'excrie.co.jp', 'alternaex.co.jp', 'cmg.traffics.jp', 'tokyogets.com',
-        'pathcrie.co.jp', 'reech.co.jp'
+        'pathcrie.co.jp', 'reech.co.jp',
+        -- メルマガ・ニュースレター除外
+        'gmail.com', 'yahoo.co.jp', 'outlook.com', 'hotmail.com',
+        'ml3.sbcr.jp', 'noreply.itmedia.co.jp', 'sendenkaigi.com',
+        'markezine.jp', 'mx.nikkei.com', 'nikkeibp.co.jp', 'marke-media.net',
+        'linecorp.com', 'qiqumo.jp'
       )
       AND company_domain IS NOT NULL
+      -- メール配信サービスを除外
+      AND company_domain NOT LIKE '%noreply%'
+      AND company_domain NOT LIKE '%no-reply%'
+      AND company_domain NOT LIKE '%newsletter%'
+      AND company_domain NOT LIKE '%mail%'
       AND DATE(datetime) BETWEEN '2025-07-07' AND '2025-07-14'
-      GROUP BY company_domain, company_name
+      GROUP BY company_domain
       HAVING COUNT(*) >= 3 AND risk_score >= 30
       ORDER BY risk_score DESC, negative_count DESC
       LIMIT 10
@@ -67,8 +77,16 @@ export async function GET(request: NextRequest) {
         'propworks.co.jp', 'cross-m.co.jp', 'cm-group.co.jp', 'shoppers-eye.co.jp',
         'd-and-m.co.jp', 'medi-l.com', 'metasite.co.jp', 'infidex.co.jp',
         'excrie.co.jp', 'alternaex.co.jp', 'cmg.traffics.jp', 'tokyogets.com',
-        'pathcrie.co.jp', 'reech.co.jp'
+        'pathcrie.co.jp', 'reech.co.jp',
+        'gmail.com', 'yahoo.co.jp', 'outlook.com', 'hotmail.com',
+        'ml3.sbcr.jp', 'noreply.itmedia.co.jp', 'sendenkaigi.com',
+        'markezine.jp', 'mx.nikkei.com', 'nikkeibp.co.jp', 'marke-media.net',
+        'linecorp.com', 'qiqumo.jp'
       )
+      AND company_domain NOT LIKE '%noreply%'
+      AND company_domain NOT LIKE '%no-reply%'
+      AND company_domain NOT LIKE '%newsletter%'
+      AND company_domain NOT LIKE '%mail%'
       AND (negative_flag = true OR sentiment_label = 'negative' OR sentiment_score < 0)
       AND DATE(datetime) BETWEEN '2025-07-07' AND '2025-07-14'
       GROUP BY category, severity

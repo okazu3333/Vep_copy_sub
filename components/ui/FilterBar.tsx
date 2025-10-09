@@ -27,12 +27,10 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
     const t: string[] = [];
     if (filters.severity !== 'all') {
       const severityLabels: Record<string, string> = {
-        'high': '高リスク (スコア80+)',
-        'medium': '中リスク (スコア50-79)',
-        'low': '低リスク (スコア30-49)',
-        'very_low': '極低リスク (スコア30未満)'
+        'desc': 'スコア降順 (高→低)',
+        'asc': 'スコア昇順 (低→高)'
       };
-      t.push(`重要度:${severityLabels[filters.severity] || filters.severity}`);
+      t.push(`ソート:${severityLabels[filters.severity] || filters.severity}`);
     }
     if (filters.status !== 'all') t.push(`状態:${filters.status}`);
     if (!hidePeriod && filters.period !== 'all') t.push(`期間:${filters.period}`);
@@ -65,17 +63,15 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
         </div>
         
         <div className="min-w-[180px]">
-          <label className="text-xs text-gray-500">重要度</label>
+          <label className="text-xs text-gray-500">ソート順</label>
           <Select value={filters.severity} onValueChange={(v) => onFiltersChange({ ...filters, severity: v })}>
             <SelectTrigger>
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="high">高リスク (スコア80+)</SelectItem>
-              <SelectItem value="medium">中リスク (スコア50-79)</SelectItem>
-              <SelectItem value="low">低リスク (スコア30-49)</SelectItem>
-              <SelectItem value="very_low">極低リスク (スコア30未満)</SelectItem>
+              <SelectItem value="desc">スコア降順 (高→低)</SelectItem>
+              <SelectItem value="asc">スコア昇順 (低→高)</SelectItem>
             </SelectContent>
           </Select>
         </div>
