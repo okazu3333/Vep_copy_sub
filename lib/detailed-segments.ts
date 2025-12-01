@@ -48,7 +48,7 @@ export const DETAILED_SEGMENT_META: Record<DetailedSegmentKey, DetailedSegmentMe
   },
   followup: {
     key: 'followup',
-    label: '催促・遅延',
+    label: '催促',
     badgeClass: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   },
   complaint: {
@@ -89,22 +89,6 @@ export function detectDetailedSegment(alert: Alert): DetailedSegmentMeta | null 
 
   // 発生セグメントの場合
   if (alert.primarySegment === 'occurrence') {
-    // 不満・クレーム（優先度: 最高）- 明確なクレームシグナル
-    if (
-      text.includes('クレーム') ||
-      text.includes('不満') ||
-      text.includes('問題') ||
-      text.includes('トラブル') ||
-      text.includes('不具合') ||
-      text.includes('エラー') ||
-      text.includes('障害') ||
-      text.includes('故障') ||
-      keywords.some(kw => ['クレーム', '不満', '問題', 'トラブル', '不具合', 'エラー', '障害', '故障'].includes(kw)) ||
-      detectionReasons.some(reason => reason.includes('クレーム') || reason.includes('不満') || reason.includes('問題'))
-    ) {
-      return DETAILED_SEGMENT_META.complaint;
-    }
-
     // 催促・遅延（優先度: 高）- 明確な催促シグナル
     if (
       text.includes('至急') ||
@@ -132,23 +116,29 @@ export function detectDetailedSegment(alert: Alert): DetailedSegmentMeta | null 
     }
 
     // 提案差異・情報共有不足（優先度: 中）
+    // 「期待と違う」「認識齟齬」「説明不足」など、内容のズレ／情報不足が明示されているケースに限定
     if (
-      text.includes('修正') ||
-      text.includes('変更') ||
       text.includes('違う') ||
+      text.includes('齟齬') ||
+      text.includes('そご') ||
+      text.includes('ズレ') ||
+      text.includes('ずれ') ||
       text.includes('期待') ||
       text.includes('要望') ||
       text.includes('確認不足') ||
-      text.includes('資料') ||
-      text.includes('再共有') ||
       text.includes('説明不足') ||
-      text.includes('条項') ||
-      text.includes('仕様') ||
-      text.includes('見積') ||
-      text.includes('提案') ||
-      text.includes('契約') ||
-      keywords.some(kw => ['修正', '変更', '違う', '期待', '要望', '確認不足', '資料', '再共有', '説明不足', '条項', '見積', '提案'].includes(kw)) ||
-      detectionReasons.some(reason => reason.includes('修正') || reason.includes('変更') || reason.includes('説明不足'))
+      text.includes('社内で説明') ||
+      text.includes('稟議が止ま') ||
+      text.includes('稟議が進んでいません') ||
+      keywords.some(kw =>
+        ['違う', '齟齬', 'そご', 'ズレ', 'ずれ', '期待', '要望', '確認不足', '説明不足'].includes(kw)
+      ) ||
+      detectionReasons.some(reason =>
+        reason.includes('提案差異') ||
+        reason.includes('情報共有不足') ||
+        reason.includes('説明不足') ||
+        reason.includes('認識齟齬')
+      )
     ) {
       return DETAILED_SEGMENT_META.proposal_issue;
     }
@@ -166,6 +156,28 @@ export function detectDetailedSegment(alert: Alert): DetailedSegmentMeta | null 
       detectionReasons.some(reason => reason.includes('再発') || reason.includes('再度') || reason.includes('同じ'))
     ) {
       return DETAILED_SEGMENT_META.reoccurrence;
+    }
+
+    // 不満・クレーム（優先度: 中）- 強いクレームワードに限定
+    // 「問題」「トラブル」「ご不便」「申し訳」など、
+    // 一般的なお詫び・課題表現はここでは拾わず、
+    // 「クレーム」「苦情」や明確な障害ワードのみを対象にする
+    if (
+      text.includes('クレーム') ||
+      text.includes('苦情') ||
+      text.includes('障害') ||
+      text.includes('故障') ||
+      text.includes('エラー') ||
+      keywords.some(kw => ['クレーム', '苦情', '障害', '故障', 'エラー'].includes(kw)) ||
+      detectionReasons.some(reason =>
+        reason.includes('クレーム') ||
+        reason.includes('苦情') ||
+        reason.includes('障害') ||
+        reason.includes('故障') ||
+        reason.includes('システムエラー')
+      )
+    ) {
+      return DETAILED_SEGMENT_META.complaint;
     }
 
     // 沈黙（デフォルト）- 返信が途絶えている状態
@@ -242,4 +254,118 @@ export function detectDetailedSegment(alert: Alert): DetailedSegmentMeta | null 
   }
 
   return null;
+}
+
+/**
+ * アラートから複数の詳細セグメントを判定
+ * - detectDetailedSegment と同じ優先順で評価しつつ、マッチしたものを複数返す
+ * - 代表ラベル: 先頭の要素
+ * - サブラベル: 2番目以降の要素
+ */
+export function detectDetailedSegments(alert: Alert): DetailedSegmentMeta[] {
+  const primary = detectDetailedSegment(alert);
+  if (!primary) return [];
+
+  const results: DetailedSegmentMeta[] = [primary];
+
+  // 発生セグメント: 「催促・遅延」「提案差異」「再発」「不満」の組み合わせを許容
+  if (alert.primarySegment === 'occurrence') {
+    const text = `${alert.subject || ''} ${alert.ai_summary || ''} ${(alert.phrases || []).join(' ')}`.toLowerCase();
+    const keywords = alert.highlightKeywords || [];
+    const detectionReasons = alert.detectionReasons || [];
+    const detectionRule = (alert as any).detectionRule;
+
+    const addIf = (meta: DetailedSegmentMeta, cond: boolean) => {
+      if (cond && !results.find((m) => m.key === meta.key)) {
+        results.push(meta);
+      }
+    };
+
+    // 催促・遅延
+    addIf(
+      DETAILED_SEGMENT_META.followup,
+      text.includes('至急') ||
+        text.includes('いつまで') ||
+        text.includes('まだですか') ||
+        text.includes('対応して') ||
+        text.includes('返事がない') ||
+        text.includes('お待ちしています') ||
+        text.includes('ご確認ください') ||
+        text.includes('急ぎ') ||
+        text.includes('早く') ||
+        text.includes('期限') ||
+        text.includes('締切') ||
+        text.includes('納期') ||
+        text.includes('催促') ||
+        text.includes('遅延') ||
+        text.includes('72時間') ||
+        text.includes('未返信') ||
+        keywords.some((kw) =>
+          ['至急', 'いつまで', 'まだですか', '対応して', '返事がない', '催促', '遅延', '期限', '締切'].includes(kw)
+        ) ||
+        detectionRule?.rule_type === 'sentiment_urgency' ||
+        detectionRule?.rule_type === 'inactivity_72h' ||
+        detectionReasons.some(
+          (reason) => reason.includes('催促') || reason.includes('遅延') || reason.includes('72時間')
+        )
+    );
+
+    // 提案差異・情報共有不足
+    addIf(
+      DETAILED_SEGMENT_META.proposal_issue,
+      text.includes('違う') ||
+        text.includes('齟齬') ||
+        text.includes('そご') ||
+        text.includes('ズレ') ||
+        text.includes('ずれ') ||
+        text.includes('期待') ||
+        text.includes('要望') ||
+        text.includes('確認不足') ||
+        text.includes('説明不足') ||
+        text.includes('社内で説明') ||
+        text.includes('稟議が止ま') ||
+        text.includes('稟議が進んでいません') ||
+        keywords.some((kw) =>
+          ['違う', '齟齬', 'そご', 'ズレ', 'ずれ', '期待', '要望', '確認不足', '説明不足'].includes(kw)
+        ) ||
+        detectionReasons.some(
+          (reason) =>
+            reason.includes('提案差異') ||
+            reason.includes('情報共有不足') ||
+            reason.includes('説明不足') ||
+            reason.includes('認識齟齬')
+        )
+    );
+
+    // 再発
+    addIf(
+      DETAILED_SEGMENT_META.reoccurrence,
+      text.includes('また') ||
+        text.includes('再度') ||
+        text.includes('再発') ||
+        text.includes('同じ問題') ||
+        text.includes('前回と同じ') ||
+        text.includes('同じ') ||
+        text.includes('繰り返し') ||
+        keywords.some((kw) =>
+          ['また', '再度', '再発', '同じ問題', '前回と同じ', '繰り返し'].includes(kw)
+        ) ||
+        detectionReasons.some(
+          (reason) => reason.includes('再発') || reason.includes('再度') || reason.includes('同じ')
+        )
+    );
+
+    // 不満（強いクレーム系のみ）
+    // 他のシグナル（催促・遅延 / 提案差異 / 再発）がすでに立っている場合は、
+    // 代表としてはそちらを優先したいので、「不満」は単独ケースのみに限定する
+    if (results.length === 1 && results[0].key === 'complaint') {
+      // 代表が complaint のときだけ、そのまま返す（他シグナルは追加しない）
+      return results;
+    }
+  }
+
+  // 予兆・フォローについても、将来必要になれば複数判定を拡張可能
+
+  // 複数検知は最大2つまでに制限（代表＋サブ1つ）
+  return results.slice(0, 2);
 }

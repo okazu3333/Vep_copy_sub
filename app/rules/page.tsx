@@ -34,6 +34,35 @@ export default function RulesPage() {
   const [analysisResult, setAnalysisResult] = useState<UseCaseAnalysis | null>(null)
   const [savedRules, setSavedRules] = useState<SegmentRule[]>(getSegmentRules())
 
+  const RULE_SUMMARIES: Record<SegmentKey, { title: string; when: string[]; how: string }> = {
+    forecast: {
+      title: "予兆：温度感低下・放置リスクを検知",
+      when: [
+        "こちらから送ったメールへの返信が 72 時間以上途絶えているとき",
+        "返信頻度やトーンが落ちてきており、ROI や競合に関する不安が増えてきたとき",
+        "夜間対応が増え、対応品質への懸念がにじみ始めているとき",
+      ],
+      how: "アラート一覧で「予兆」セグメントとして表示され、詳細では『トーンダウン』『放置予兆』『対応時間/品質』などのバッジが付きます。",
+    },
+    occurrence: {
+      title: "発生：催促・クレーム・再発トラブルを検知",
+      when: [
+        "『至急』『いつまで』『まだですか』『締切』などの催促ワードが含まれるとき",
+        "『クレーム』『不満』『エラー』『不具合』など、明確なトラブル報告が届いたとき",
+        "『また』『再発』『前回と同じ』など、過去解決したはずの問題が再度起きているとき",
+      ],
+      how: "アラート一覧で「発生」セグメントとして表示され、詳細では『催促』『提案差異・情報共有不足』『再発』『不満』などのバッジが付きます。",
+    },
+    follow: {
+      title: "フォロー：トラブル後の回復確認を検知",
+      when: [
+        "ポジティブ〜ニュートラル寄りのトーンで、状況確認や改善報告のメールを送ったとき",
+        "『フォロー』『改善』『ご確認ください』『レビュー』などの言葉を含むフォローメールが送信されたとき",
+      ],
+      how: "アラート一覧で「フォロー」セグメントとして表示され、詳細では『回復確認』バッジと Before/After（発生→フォロー）の変化が表示されます。",
+    },
+  }
+
   // ユースケース分析
   const handleAnalyzeUseCase = async () => {
     if (!userCaseInput.trim()) return
@@ -272,19 +301,20 @@ export default function RulesPage() {
           </Card>
         </TabsContent>
 
-        {/* 検知ルール一覧タブ */}
+        {/* 検知ルール一覧タブ（ユーザー向けユースケース一覧） */}
         <TabsContent value="rules" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>検知ルール一覧</CardTitle>
+              <CardTitle>AIが作成した検知ルール（ユースケース一覧）</CardTitle>
               <CardDescription>
-                現在登録されている検知ルールの一覧です
+                「どんなメールのときに、どのような検知バッジが表示されるか」をユースケース単位で確認できます。
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {savedRules.map((rule, idx) => {
                   const segmentMeta = SEGMENT_META[rule.segment]
+                  const summary = RULE_SUMMARIES[rule.segment]
                   return (
                     <Card key={idx}>
                       <CardHeader>
@@ -293,48 +323,27 @@ export default function RulesPage() {
                             <Badge variant="outline" className="text-base">
                               {segmentMeta.label}
                             </Badge>
-                            <Badge variant="secondary">
-                              優先順位: {rule.priority}
-                            </Badge>
-                            <Badge variant="outline">
-                              {segmentMeta.category.label}
-                            </Badge>
                           </div>
                         </div>
                         <CardDescription className="mt-2">
-                          {segmentMeta.description}
+                          {summary?.title ?? segmentMeta.description}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          <div>
-                            <Label className="text-sm font-medium">検知条件</Label>
-                            <div className="mt-2 space-y-2">
-                              {rule.conditions.map((cond, condIdx) => (
-                                <div key={condIdx} className="p-2 bg-muted rounded text-sm">
-                                  <span className="font-medium">{cond.metric}</span>
-                                  <span className="mx-2 text-muted-foreground">
-                                    {cond.operator}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {Array.isArray(cond.value)
-                                      ? cond.value.join(", ")
-                                      : String(cond.value)}
-                                  </span>
-                                  <span className="ml-2 text-xs text-muted-foreground">
-                                    (重み: {cond.weight})
-                                  </span>
-                                </div>
+                          <div className="p-3 rounded-md bg-muted/60">
+                            <Label className="text-sm font-medium">どんな場面で検知されるか（サマリー）</Label>
+                            <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-muted-foreground">
+                              {(summary?.when ?? []).map((w, i) => (
+                                <li key={i}>{w}</li>
                               ))}
-                            </div>
+                            </ul>
                           </div>
-                          <div className="flex gap-4 text-sm text-muted-foreground">
-                            <span>
-                              信頼度閾値: {(rule.confidence_threshold * 100).toFixed(0)}%
-                            </span>
-                            <span>
-                              最小信頼度: {(rule.min_confidence * 100).toFixed(0)}%
-                            </span>
+                          <div className="text-xs text-muted-foreground border-t pt-2">
+                            このユースケースがヒットすると、アラート一覧では
+                            「{segmentMeta.category.label} / {segmentMeta.label}」
+                            のセグメントとして検知バッジに表示されます。
+                            詳細カードでは、対応する中項目セグメント（催促 / 提案差異・情報共有不足 / 再発 / 放置予兆 / 回復確認 など）が表示されます。
                           </div>
                         </div>
                       </CardContent>

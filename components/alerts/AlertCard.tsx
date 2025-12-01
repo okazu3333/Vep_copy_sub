@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { getSegmentMeta } from '@/lib/segments';
 import { getAlertCategoryMeta } from '@/lib/alert-categories';
 import { formatOwnerLabel } from '@/lib/owner-labels';
-import { detectDetailedSegment } from '@/lib/detailed-segments';
+import { detectDetailedSegment, detectDetailedSegments } from '@/lib/detailed-segments';
 
 interface AlertCardProps {
   alert: Alert & { 
@@ -122,7 +122,8 @@ export function AlertCard({ alert, onClick, isHighlighted = false }: AlertCardPr
   const detectionRule = (alert as any).detectionRule;
   const categoryMeta = getAlertCategoryMeta(alert);
   const segmentMeta = getSegmentMeta(alert.primarySegment ?? undefined);
-  const detailedSegmentMeta = detectDetailedSegment(alert);
+  const detailedSegments = detectDetailedSegments(alert);
+  const detailedSegmentMeta = detailedSegments[0] ?? detectDetailedSegment(alert);
   const ownerDisplay = formatOwnerLabel(alert.assignee || '');
 
   const detectionTags: Array<{ label: string; className: string }> = [];
@@ -200,11 +201,14 @@ export function AlertCard({ alert, onClick, isHighlighted = false }: AlertCardPr
 
   const tagGroups: Array<{ title: string; badges: Array<{ label: string; className: string }> }> = [];
 
-  // 詳細セグメント（中項目）を表示
-  if (detailedSegmentMeta) {
+  // 詳細セグメント（中項目）を複数表示（A+B形式）
+  if (detailedSegments.length > 0) {
     tagGroups.push({
       title: 'セグメント',
-      badges: [{ label: detailedSegmentMeta.label, className: detailedSegmentMeta.badgeClass }],
+      badges: detailedSegments.map((meta) => ({
+        label: meta.label,
+        className: meta.badgeClass,
+      })),
     });
   } else if (segmentMeta) {
     // フォールバック: 詳細セグメントが判定できない場合は大項目を表示
@@ -247,12 +251,13 @@ export function AlertCard({ alert, onClick, isHighlighted = false }: AlertCardPr
 
   // 品質表示は削除
 
-  // 検知表示を中項目セグメントに変更
-  if (detailedSegmentMeta) {
+  // 検知表示を中項目セグメント（複数）のラベルに変更（A+B 形式）
+  if (detailedSegments.length > 0) {
+    const label = detailedSegments.map((m) => m.label).join(' + ');
     insightCards.push({
       key: 'detection',
       label: '検知',
-      value: detailedSegmentMeta.label,
+      value: label,
       className: 'bg-rose-50 border-rose-200 text-rose-900',
     });
   }
@@ -282,12 +287,33 @@ export function AlertCard({ alert, onClick, isHighlighted = false }: AlertCardPr
       : null,
   ].filter(Boolean) as Array<{ key: string; icon: React.ReactNode; label: string; value: React.ReactNode }>;
 
+  // AI要約を「何が起きているか＋何をすべきか」に寄せた表示に加工
+  // 元の ai_summary が長文（本文そのもの）の場合は、メール側の ai_summary か短くトリムしたテキストを利用する
+  const rawSummarySource =
+    (alert.ai_summary && alert.ai_summary.length <= 160
+      ? alert.ai_summary
+      : alert.emails?.[0]?.ai_summary || alert.ai_summary || '');
+
+  const trimmedSummary =
+    rawSummarySource.length > 160 ? `${rawSummarySource.slice(0, 157)}...` : rawSummarySource;
+
+  const segmentLabelForSummary =
+    detailedSegments.length > 0
+      ? detailedSegments.map((m) => m.label).join(' + ')
+      : segmentMeta?.label;
+  const actionLabel = segmentMeta?.actionLabel;
+
+  const displaySummary =
+    trimmedSummary && actionLabel
+      ? `${trimmedSummary} ／ 推奨: ${actionLabel}`
+      : trimmedSummary;
+
   const summaryBlocks = [
-    alert.ai_summary
+    displaySummary
       ? {
           key: 'summary',
           title: 'AI要約',
-          text: alert.ai_summary,
+          text: displaySummary,
         }
       : null,
   ].filter(Boolean) as Array<{ key: string; title: string; text: string }>;
@@ -391,7 +417,12 @@ export function AlertCard({ alert, onClick, isHighlighted = false }: AlertCardPr
             {summaryBlocks.map((block) => (
               <div key={block.key}>
                 <div className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold mb-1">{block.title}</div>
-                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{block.text}</p>
+                <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{block.text}</p>
+                {alert.primarySegment === 'follow' && (
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    Before/After: 発生 → フォロー（回復確認）
+                  </p>
+                )}
               </div>
             ))}
           </div>

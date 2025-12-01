@@ -477,7 +477,8 @@ export default function AlertsPage() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [segmentFilter, setSegmentFilter] = useState<SegmentKey | null>(null);
-  const [ownerFilter, setOwnerFilter] = useState<string | null>('tanaka@cross-m.co.jp');
+  // デフォルトは「すべて」を表示するため、ownerFilter は null で開始
+  const [ownerFilter, setOwnerFilter] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<AlertCategoryKey, boolean>>({
     forecast: true,
     occurrence: true,
