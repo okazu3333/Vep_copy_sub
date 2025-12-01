@@ -188,6 +188,7 @@ export async function GET(request: NextRequest) {
           reply_level,
           is_root,
           source_uri,
+          sentiment_score,
           CASE
             WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(緊急|至急)') THEN 'urgent_response'
             WHEN REGEXP_CONTAINS(LOWER(COALESCE(subject, '')), r'(解約|キャンセル)') THEN 'churn_risk'
@@ -204,19 +205,74 @@ export async function GET(request: NextRequest) {
         FROM \`viewpers.salesguard_alerts.unified_email_messages\`
         ${whereClause}
       ),
+      -- 新しい分析モデルの結果を結合
+      PhaseCResults AS (
+        SELECT 
+          thread_id,
+          MAX(p_resolved_24h) AS p_resolved_24h,
+          MAX(ttr_pred_min) AS ttr_pred_min,
+          MAX(hazard_score) AS hazard_score,
+          MAX(predicted_at) AS predicted_at
+        FROM \`viewpers.salesguard_alerts.incident_outcomes\`
+        WHERE predicted_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+        GROUP BY thread_id
+      ),
+      PhaseDResults AS (
+        SELECT 
+          thread_id,
+          MAX(score) AS quality_score,
+          MAX(level) AS quality_level,
+          MAX(scored_at) AS scored_at
+        FROM \`viewpers.salesguard_alerts.reply_quality\`
+        WHERE scored_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+        GROUP BY thread_id
+      ),
+      DetectionRuleResults AS (
+        -- 顧客からの問い合わせに72時間以上未返信（自社営業起因）
+        SELECT 
+          thread_id,
+          'inactivity_72h' AS detection_rule_type,
+          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(datetime), HOUR) AS hours_since_last_activity,
+          LEAST(100, (TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(datetime), HOUR) - 72) / 24.0 * 20 + 50) AS detection_score
+        FROM \`viewpers.salesguard_alerts.unified_email_messages\`
+        WHERE direction = 'inbound'
+        GROUP BY thread_id
+        HAVING hours_since_last_activity >= 72
+      ),
       Deduplicated AS (
         SELECT *
         FROM Base
         WHERE row_rank = 1
       ),
+      Enriched AS (
+        SELECT 
+          d.*,
+          pc.p_resolved_24h,
+          pc.ttr_pred_min,
+          pc.hazard_score,
+          pd.quality_score,
+          pd.quality_level,
+          dr.detection_rule_type,
+          dr.hours_since_last_activity,
+          dr.detection_score AS detection_rule_score,
+          -- 統合スコア計算（既存スコア + 新しい指標）
+          COALESCE(d.score, 0) + 
+            COALESCE((1.0 - pc.p_resolved_24h) * 20, 0) + -- 低鎮火確率を加算
+            COALESCE((100 - pd.quality_score) * 0.1, 0) + -- 低品質を加算
+            COALESCE(dr.detection_score * 0.3, 0) AS calculated_urgency_score
+        FROM Deduplicated d
+        LEFT JOIN PhaseCResults pc ON d.thread_id = pc.thread_id
+        LEFT JOIN PhaseDResults pd ON d.thread_id = pd.thread_id
+        LEFT JOIN DetectionRuleResults dr ON d.thread_id = dr.thread_id
+      ),
       Filtered AS (
         SELECT *
-        FROM Deduplicated
+        FROM Enriched
         WHERE 1=1${segmentClause}${severityClause}
       )
       SELECT *
       FROM Filtered
-        ORDER BY datetime DESC
+        ORDER BY calculated_urgency_score DESC, datetime DESC
       LIMIT @limit OFFSET @offset
     `
 
@@ -331,7 +387,7 @@ export async function GET(request: NextRequest) {
 
     const segmentCounts = segmentCountRows?.[0] || {}
 
-    const alerts = rows.map((row: any) => {
+      const alerts = rows.map((row: any) => {
       const assignee = determineAssignee(row.from || '', row.to || '', row.direction || '')
       const customerName = determineCustomerName(row.from || '', row.to || '', row.direction || '', row.company_domain || '')
       const urgencyScore = Math.min(Number(row.calculated_urgency_score) || 0, 100)
@@ -339,6 +395,17 @@ export async function GET(request: NextRequest) {
 
       const detectionReasons: string[] = []
       const highlightKeywords: string[] = []
+      
+      // 新しい分析モデルの結果を検知理由に追加
+      if (row.p_resolved_24h !== null && row.p_resolved_24h < 0.3) {
+        detectionReasons.push(`鎮火確率が低い (${(row.p_resolved_24h * 100).toFixed(0)}%)`)
+      }
+      if (row.quality_score !== null && row.quality_score < 60) {
+        detectionReasons.push(`返信品質が低い (${row.quality_score.toFixed(0)}点)`)
+      }
+      if (row.detection_rule_type === 'inactivity_72h') {
+        detectionReasons.push(`顧客からの問い合わせに${Math.floor(row.hours_since_last_activity / 24)}日間未返信`)
+      }
 
       switch (row.new_primary_segment) {
         case 'urgent_response':
@@ -418,7 +485,22 @@ export async function GET(request: NextRequest) {
         urgencyScore,
         detection_score: urgencyScore,
         detectionReasons,
-        highlightKeywords: [...new Set(highlightKeywords)]
+        highlightKeywords: [...new Set(highlightKeywords)],
+        // 新しい分析モデルの指標
+        phaseC: row.p_resolved_24h !== null ? {
+          p_resolved_24h: row.p_resolved_24h,
+          ttr_pred_min: row.ttr_pred_min,
+          hazard_score: row.hazard_score,
+        } : null,
+        phaseD: row.quality_score !== null ? {
+          quality_score: row.quality_score,
+          quality_level: row.quality_level,
+        } : null,
+        detectionRule: row.detection_rule_type ? {
+          rule_type: row.detection_rule_type,
+          hours_since_last_activity: row.hours_since_last_activity,
+          score: row.detection_rule_score,
+        } : null,
       }
     })
 

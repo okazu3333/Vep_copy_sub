@@ -1,65 +1,124 @@
 'use client';
 
-import { useState } from 'react';
+import React from 'react';
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/types';
-import { X, MessageCircle, TrendingUp, MoreHorizontal, Send, Hash, User, Building2, Mail, ArrowRight, ArrowLeft, Reply, Clock } from 'lucide-react';
-import { HighlightText } from '@/components/ui/HighlightText';
+import { X, MessageCircle, ArrowRight, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DEFAULT_WEIGHTS } from '@/lib/advanced-scoring';
 import { calculateUnifiedScore } from '@/lib/unified-scoring';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { INTERNAL_EMAIL_DOMAINS } from '@/lib/constants/internal-domains';
+import { getSegmentMeta } from '@/lib/segments';
+import type { AiSuggestedSummary, SimilarCase } from '@/types/ai';
+import { RawEvent } from '@/lib/detection/models';
+import { buildFollowUpBody } from '@/lib/follow-template';
 
 interface AlertDetailProps {
   alert: Alert;
   onClose: () => void;
+  onRefresh?: () => void;
+  onFollowCreated?: (newAlertId?: string) => void;
   isWorkerView?: boolean;
 }
 
-export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetailProps) {
+const USE_DUMMY_DATA = process.env.NEXT_PUBLIC_USE_DUMMY_ALERTS !== '0';
+
+export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWorkerView = false }: AlertDetailProps) {
   const [status, setStatus] = useState(alert.status);
   const [loadingBodyIds, setLoadingBodyIds] = useState<Record<string, boolean>>({});
   const [bodyCache, setBodyCache] = useState<Record<string, string>>({});
   const [currentWeights] = useState(DEFAULT_WEIGHTS);
+  const [activeTab, setActiveTab] = useState('insights');
+  const [aiSummary, setAiSummary] = useState<AiSuggestedSummary | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [openMessageId, setOpenMessageId] = useState<string | null>(null);
+  const [followStatus, setFollowStatus] = useState<string | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
 
-  // 社内ドメイン判定（暫定リスト）
-  const INTERNAL_DOMAINS = INTERNAL_EMAIL_DOMAINS;
-  
+  useEffect(() => {
+    let cancelled = false;
+    const loadData = async () => {
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        const segment = alert.primarySegment ?? undefined;
+        if (USE_DUMMY_DATA) {
+          const mod = await import('@/data/mock/aiRecommendations');
+          if (cancelled) return;
+          setAiSummary(mod.getMockAiSummary(segment));
+          return;
+        }
+
+        const summaryRes = await fetch('/api/ai/summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ segment, thread_id: alert.threadId }),
+        });
+
+        if (cancelled) return;
+
+        if (!summaryRes.ok) {
+          throw new Error('AI要約の取得に失敗しました');
+        }
+        const summaryJson = await summaryRes.json();
+        setAiSummary(summaryJson.summary ?? null);
+      } catch (error) {
+        console.error(error);
+        setAiError(error instanceof Error ? error.message : 'AI解析の取得に失敗しました');
+      } finally {
+        if (!cancelled) {
+          setAiLoading(false);
+        }
+      }
+    };
+
+    loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [alert.id, alert.primarySegment, alert.threadId]);
+
+  const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
+  const sortedEmails = [...allEmails].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
   const extractDomain = (s: string): string | null => {
     if (!s) return null;
     const m = s.toLowerCase().match(/@([^>\s]+)>?$/);
     return m ? m[1] : null;
   };
-  
+
   const isInternal = (addr: string): boolean => {
-    const d = extractDomain(addr);
-    return !!d && INTERNAL_DOMAINS.includes(d);
+    const domain = extractDomain(addr);
+    return !!domain && INTERNAL_EMAIL_DOMAINS.includes(domain);
   };
 
-  // 担当者を自社ドメインアドレスから抽出
-  const getInternalAssignee = (): string => {
-    const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
-    const internalSenders = allEmails
-      .filter(email => isInternal(email.sender || ''))
-      .map(email => email.sender || '')
+  const getInternalAssignee = () => {
+    const internalSenders = sortedEmails
+      .filter((email) => isInternal(email.sender || ''))
+      .map((email) => email.sender || '')
       .filter(Boolean);
-    
-    // 最も頻繁に出現する内部アドレスを担当者とする
+    if (!internalSenders.length) {
+      return alert.assignee || '未割当';
+    }
     const senderCounts: Record<string, number> = {};
-    internalSenders.forEach(sender => {
+    internalSenders.forEach((sender) => {
       senderCounts[sender] = (senderCounts[sender] || 0) + 1;
     });
-    
-    const mostFrequentSender = Object.entries(senderCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0];
-    
-    return mostFrequentSender || alert.assignee || '未割当';
+    const frequent = Object.entries(senderCounts).sort((a, b) => b[1] - a[1])[0];
+    return frequent?.[0] || alert.assignee || '未割当';
   };
+
+  const internalAssignee = getInternalAssignee();
 
   const getSeverityColor = (severity: 'A' | 'B' | 'C') => {
     switch (severity) {
@@ -76,6 +135,7 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleString('ja-JP');
   };
 
@@ -89,462 +149,583 @@ export function AlertDetail({ alert, onClose, isWorkerView = false }: AlertDetai
           alert.status = prev;
           setStatus(prev);
           toast('変更を取り消しました');
-        }
-      }
+        },
+      },
     });
   };
 
   const handleEscalation = () => {
-    toast('経営陣への緊急報告を送信しました', { description: '15分以内に対応方針を決定してください。' });
+    toast('経営陣への緊急報告を送信しました', {
+      description: '15分以内に対応方針を決定してください。',
+    });
   };
 
-  const detectionScore = typeof alert.detection_score === 'number' ? Math.round(alert.detection_score) : undefined;
-  const urgencyScore = typeof alert.urgencyScore === 'number' ? Math.round(alert.urgencyScore) : undefined;
-  const apiDetectionReasons = alert.detectionReasons || [];
-  const apiHighlightKeywords = alert.highlightKeywords || [];
-  
-  const firstEmailSubject = (Array.isArray(alert.emails) && alert.emails[0] && alert.emails[0].subject) ? alert.emails[0].subject : undefined;
-  const sentimentLabel = (alert as any).sentiment_label as string | null | undefined;
-  const sentimentScore = (alert as any).sentiment_score as number | null | undefined;
-  
-  // phrasesフィールドからもキーワードを取得
-  const phrasesKeywords = Array.isArray(alert.phrases) ? alert.phrases : 
-                         (typeof alert.phrases === 'string' && alert.phrases) ? 
-                         alert.phrases.split(',').map(s => s.trim()).filter(Boolean) : [];
-  
-  // 検知ロジックの重み（UI表示用）
-  const RULE_WEIGHTS: Record<string, number> = {
-    'クレーム': 1.0, '苦情': 1.0, '不満': 1.0,
-    '緊急': 1.5, '至急': 1.5, '急ぎ': 1.5,
-    'キャンセル': 1.2, '解約': 1.2,
-    '高い': 0.8, '料金': 0.8, '価格': 0.8,
-    '不良': 1.3, '不具合': 1.3, '故障': 1.3,
-    'まだですか': 1.1, '対応して': 1.1, '返事がない': 1.1,
-  };
-
-  // キーワードを統合（重複除去）
-  const allKeywords = [...new Set([...apiHighlightKeywords, ...phrasesKeywords])];
-
-  // 統一されたスコア計算（一覧とモーダルで一貫性を保つ）
-  const unifiedScore = calculateUnifiedScore(alert, currentWeights);
-  
-  // 統一されたスコアを使用（調整可能）
-  const finalScore = unifiedScore.score;
-
-  // メールを時系列順にソートし、リプライ階層を構築
-  const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
-  const sortedEmails = [...allEmails].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-  const loadBodyIfNeeded = async (messageKey: string, messageId?: string | null) => {
-    if (!messageId || bodyCache[messageKey] || loadingBodyIds[messageKey]) return;
-    setLoadingBodyIds(prev => ({ ...prev, [messageKey]: true }));
-    
+  const fetchSentimentScoreForText = async (text: string): Promise<number> => {
+    if (!text.trim()) return 0;
     try {
-      // Try to get email body from BigQuery directly
-      const directQuery = `/api/email-body?message_id=${encodeURIComponent(messageId)}`;
-      
-      const res = await fetch(directQuery);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.body) {
-          setBodyCache(prev => ({ ...prev, [messageKey]: data.body }));
-          return;
-        }
-      }
-      
-      // Fallback: Try multiple API endpoints
-      const endpoints = [
-        `/api/alerts-threaded/message?message_id=${encodeURIComponent(messageId)}`,
-        `/api/alerts/${alert.id}/message?message_id=${encodeURIComponent(messageId)}`,
-        `/api/alerts-bigquery?message_id=${encodeURIComponent(messageId)}`
-      ];
-      
-      let body = null;
-      
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint);
-          if (res.ok) {
-            const data = await res.json();
-            // Try multiple body field names
-            body = data?.message?.body || 
-                   data?.message?.body_preview || 
-                   data?.message?.content || 
-                   data?.message?.body_text ||
-                   data?.body || 
-                   data?.content ||
-                   data?.body_preview;
-            
-            if (body && body.trim()) {
-              break; // Found valid body content
-            }
-          }
-        } catch (endpointError) {
-          console.warn(`Failed to fetch from ${endpoint}:`, endpointError);
-          continue;
-        }
-      }
-      
-      if (body && body.trim()) {
-        setBodyCache(prev => ({ ...prev, [messageKey]: body }));
-      } else {
-        // Try to get body from the email object itself
-        const email = sortedEmails.find(e => e.id === messageId);
-        const fallbackBody = email?.body || 
-                           email?.ai_summary || 
-                           (email as any)?.body_preview ||
-                           (email as any)?.content;
-        
-        if (fallbackBody && fallbackBody.trim()) {
-          setBodyCache(prev => ({ ...prev, [messageKey]: fallbackBody }));
-        } else {
-          // Mark as unavailable but with a helpful message
-          setBodyCache(prev => ({ 
-            ...prev, 
-            [messageKey]: `件名: ${email?.subject || '不明'}\n\n※ メール本文の詳細情報は現在利用できません。\n※ システム管理者にお問い合わせください。` 
-          }));
-        }
-      }
+      const resp = await fetch('/api/huggingface-sentiment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      return deriveSentimentScoreFromResult(data?.sentiment);
     } catch (error) {
-      console.error('Failed to load email body:', error);
-      // Provide a helpful error message
-      setBodyCache(prev => ({ 
-        ...prev, 
-        [messageKey]: 'メール本文の読み込みに失敗しました。\nネットワーク接続を確認してから再度お試しください。' 
-      }));
-    } finally {
-      setLoadingBodyIds(prev => ({ ...prev, [messageKey]: false }));
+      console.error('follow sentiment failed', error);
+      return 0.3;
     }
   };
 
-  const riskPhrases: string[] = Array.isArray(alert.phrases) ? alert.phrases : [];
-  const matched = riskPhrases.filter(p => RULE_WEIGHTS[p] !== undefined);
-  const ruleScore = matched.reduce((acc, p) => acc + (RULE_WEIGHTS[p] || 0), 0);
-  const computedScore = typeof detectionScore === 'number' ? detectionScore : Math.min(100, Math.round(ruleScore * 30));
+  const deriveSentimentScoreFromResult = (result: any): number => {
+    if (!result) return 0;
+    const label = (result.label ?? result.dominantEmotion ?? '').toString().toLowerCase();
+    if (label.includes('positive')) return 0.5;
+    if (label.includes('negative')) return -0.6;
+    if (label.includes('urgent')) return -0.4;
+    if (label.includes('neutral')) return 0;
+    if (Array.isArray(result.scores)) {
+      const findScore = (keyword: string) =>
+        result.scores?.find((entry: any) => entry?.label?.toString().toLowerCase().includes(keyword))
+          ?.score ?? 0;
+      const positive = findScore('positive');
+      const negative = findScore('negative');
+      const urgent = findScore('urgent');
+      const score = positive - negative - urgent * 0.5;
+      return Math.max(-1, Math.min(1, score));
+    }
+    if (typeof result.score === 'number') return result.score;
+    if (typeof result.generatedScore === 'number') return result.generatedScore;
+    return 0;
+  };
 
-  const internalAssignee = getInternalAssignee();
+  const handleFollowResponse = async () => {
+    if (followLoading) return;
+    setFollowStatus(null);
+    setFollowLoading(true);
+    const followBody = buildFollowUpBody(alert);
+    const sentimentScore = await fetchSentimentScoreForText(followBody);
 
-  // 検知スコアが0の場合の処理
+    const followEvent: RawEvent = {
+      id: `follow-${alert.id}-${Date.now()}`,
+      subject: alert.subject ? `Re: ${alert.subject}` : 'フォローアップのご連絡',
+      body: followBody,
+      summary: 'フォローアップ報告',
+      customer: alert.customer || '営業顧客',
+      channel: 'email',
+      direction: 'outbound',
+      assignee: alert.assignee || 'success@cross-m.co.jp',
+      sentimentScore,
+      occurredAt: new Date().toISOString(),
+      hoursSinceLastReply: 1,
+      keywords: ['フォロー', '改善', '共有'],
+      urgencyHints: ['フォロー'],
+      language: 'ja',
+      threadId: alert.threadId || `thread-${alert.id}`,
+      priorAlerts: [alert.id],
+    };
+
+    try {
+      const resp = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(followEvent),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const newAlertId =
+        Array.isArray(data.alerts) && data.alerts.length ? data.alerts[0]?.id ?? null : null;
+      setFollowStatus(`フォローメールを送信しました（アラート生成: ${data.created}件）`);
+      toast.success('フォローアップを記録しました');
+      onRefresh?.();
+      onFollowCreated?.(newAlertId ?? undefined);
+    } catch (error) {
+      console.error(error);
+      setFollowStatus(
+        `送信に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`
+      );
+      toast.error('フォロー送信に失敗しました');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const loadEmailBody = async (messageKey: string, messageId?: string | null) => {
+    if (!messageId || bodyCache[messageKey] || loadingBodyIds[messageKey]) return;
+    setLoadingBodyIds((prev) => ({ ...prev, [messageKey]: true }));
+    try {
+      const email = sortedEmails.find((item) => item.id === messageId);
+      const fallback =
+        email?.body ||
+        email?.ai_summary ||
+        `件名: ${email?.subject || '不明'}\n※ 本文の詳細は取得できませんでした。`;
+      setBodyCache((prev) => ({ ...prev, [messageKey]: fallback }));
+    } finally {
+      setLoadingBodyIds((prev) => ({ ...prev, [messageKey]: false }));
+    }
+  };
+
+  const detectionScore =
+    typeof alert.detection_score === 'number' ? Math.round(alert.detection_score) : undefined;
+  const urgencyScore =
+    typeof alert.urgencyScore === 'number' ? Math.round(alert.urgencyScore) : undefined;
+  const phrasesKeywords = Array.isArray(alert.phrases)
+    ? alert.phrases
+    : typeof alert.phrases === 'string'
+    ? alert.phrases.split(',').map((s) => s.trim())
+    : [];
+  const highlightKeywords = Array.isArray(alert.highlightKeywords)
+    ? alert.highlightKeywords
+    : alert.highlightKeywords
+    ? [alert.highlightKeywords]
+    : [];
+  const allKeywords = [...new Set([...highlightKeywords, ...phrasesKeywords])];
+
+  const segmentMeta = getSegmentMeta(alert.primarySegment ?? undefined);
+  const unifiedScore = calculateUnifiedScore(alert, currentWeights);
+  const finalScore = unifiedScore.score;
+  const computedScore = detectionScore ?? Math.round(finalScore);
+  const detectionReasons = alert.detectionReasons || [];
+  const directionDetails =
+    detectionReasons.length > 0 ? detectionReasons : unifiedScore.explanation.slice(0, 2);
+  const directionSummary = segmentMeta?.actionLabel ?? '対応方針が未設定です。';
+
+  const resolution = alert.resolutionPrediction;
+  const quality = alert.quality;
+  const qualitySignals = quality?.signals || [];
+  const phaseCData = (alert as any).phaseC;
+  const phaseDData = (alert as any).phaseD;
+  const detectionRuleData = (alert as any).detectionRule;
+
+  const metricHighlights: string[] = [];
+  metricHighlights.push(`統合スコア ${finalScore}`);
+  if (typeof urgencyScore === 'number') {
+    metricHighlights.push(`緊急度 ${urgencyScore}`);
+  }
+  if (phaseCData?.p_resolved_24h) {
+    metricHighlights.push(`24h鎮火確率 ${(phaseCData.p_resolved_24h * 100).toFixed(0)}%`);
+  } else if (resolution?.probability !== undefined) {
+    metricHighlights.push(`鎮火確率 ${Math.round(resolution.probability * 100)}%`);
+  }
+  if (phaseCData?.ttr_pred_min) {
+    metricHighlights.push(`予測TTR 約 ${Math.round(phaseCData.ttr_pred_min / 60)}h`);
+  } else if (typeof resolution?.ttrHours === 'number') {
+    metricHighlights.push(`予測TTR 約 ${Math.round(resolution.ttrHours)}h`);
+  }
+  if (detectionRuleData?.hours_since_last_activity) {
+    const hours = detectionRuleData.hours_since_last_activity;
+    metricHighlights.push(`未応答 ${Math.floor(hours / 24)}日 ${Math.round(hours % 24)}時間`);
+  }
+
+  const qualitySummary = (() => {
+    if (phaseDData) {
+      return {
+        title: `返信品質 ${phaseDData.quality_level}`,
+        detail:
+          typeof phaseDData.quality_score === 'number'
+            ? `${phaseDData.quality_score.toFixed(0)}点`
+            : 'スコア未計測',
+        signals: qualitySignals,
+      };
+    }
+    if (quality) {
+      return {
+        title: `返信品質 ${quality.level}`,
+        detail: `${Math.round(quality.score)}点`,
+        signals: qualitySignals,
+      };
+    }
+    return {
+      title: '品質データ未取得',
+      detail: '分析モデルからの品質スコアがまだ連携されていません。',
+      signals: [] as string[],
+    };
+  })();
+
+  const latestEmail = sortedEmails[0];
   const hasDetection = finalScore > 0;
   const displaySeverity = hasDetection ? alert.severity : 'C';
+  const primaryReason =
+    directionDetails.length > 0
+      ? directionDetails[0]
+      : segmentMeta?.detectionLabel ?? '検知理由の詳細はありません。';
+  const toggleHistory = () => {
+    setActiveTab((prev) => (prev === 'history' ? 'insights' : 'history'));
+  };
+
+  const handleToggleMessage = (messageKey: string, messageId?: string | null) => {
+    if (openMessageId === messageKey) {
+      setOpenMessageId(null);
+      return;
+    }
+    setOpenMessageId(messageKey);
+    loadEmailBody(messageKey, messageId);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-slate-800 text-white p-4 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-white">アラート詳細</h2>
-            <div className="flex items-center gap-2">
-              {/* Status Update Buttons */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-300">ステータス:</span>
-                <select 
-                  value={status} 
-                  onChange={(e) => setStatus(e.target.value as Alert['status'])}
-                  className="bg-white text-gray-900 px-3 py-1 rounded text-sm border"
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50">
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="bg-slate-800 text-white px-4 py-4 flex-shrink-0 border-b border-slate-700">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-200">
+              <Badge className={cn('text-[10px] px-2 py-0.5', getSeverityColor(displaySeverity))}>
+                緊急度 {displaySeverity}
+              </Badge>
+              {segmentMeta && (
+                <Badge className={cn('text-[10px] px-2 py-0.5 border', segmentMeta.badgeClass)}>
+                  {segmentMeta.category.label} / {segmentMeta.label}
+                </Badge>
+              )}
+            </div>
+            <h2 className="text-xl font-semibold">{alert.subject || 'アラート詳細'}</h2>
+            <p className="text-sm text-slate-200">
+              {alert.customer || '顧客未設定'} ・ 担当 {internalAssignee} ・ 更新 {formatDateTime(alert.updated_at)}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-white hover:bg-slate-700 h-8 w-8 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-4">
+          {alert.primarySegment !== 'follow' && (
+            <div className="rounded-md border border-blue-100 bg-blue-50 p-3 space-y-2">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className="text-sm text-blue-800">
+                  このアラートに対してフォローアップメールを送信し、感情/セグメント遷移を確認できます。
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleFollowResponse}
+                  disabled={followLoading}
                 >
-                  <option value="pending">未対応</option>
-                  <option value="in_progress">対応中</option>
-                  <option value="resolved">解決済み</option>
-                  <option value="closed">完了</option>
-                </select>
-                <Button size="sm" variant="secondary" onClick={handleStatusUpdate}>
-                  更新
+                  {followLoading ? '送信中…' : 'フォローアップを送信'}
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-slate-700">
-                <X className="h-4 w-4" />
-              </Button>
+              {followStatus && <p className="text-xs text-blue-700">{followStatus}</p>}
             </div>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Summary + Risk Cards on top */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Summary Card */}
-              <Card className="border-slate-200 bg-slate-50">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-base flex items-center justify-between">
-                    <span>アラート概要</span>
-                    <Badge className={cn('text-xs', unifiedScore.color)}>
-                      {unifiedScore.label}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 text-sm space-y-3">
-                  <div>
-                    <div className="text-xs text-slate-500 mb-1">アラート件名</div>
-                    <div className="font-semibold text-slate-900">
-                      <HighlightText 
-                        text={alert.subject || '—'} 
-                        keywords={alert.highlightKeywords || []}
-                      />
-                    </div>
-                  </div>
-                  {firstEmailSubject && firstEmailSubject !== alert.subject && (
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">メール件名</div>
-                      <div className="text-slate-900">{firstEmailSubject}</div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">顧客</div>
-                      <div className="text-slate-900 font-medium">{alert.customer || '—'}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">担当者</div>
-                      <div className="text-slate-900 font-medium">{internalAssignee}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Risk Indicator Card */}
-              <Card className={cn("border-red-200", hasDetection ? "bg-red-50" : "bg-gray-50")}>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className={cn("text-base", hasDetection ? "text-red-800" : "text-gray-600")}>
-                    リスク指標
-                    {!hasDetection && (
-                      <Badge className="ml-2 bg-gray-100 text-gray-600">検知なし</Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 text-sm space-y-4">
-                  {/* スコア表示 */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>検知スコア</div>
-                      <div className={cn("font-bold text-lg", hasDetection ? "text-red-800" : "text-gray-600")}>
-                        {finalScore}/100
+          )}
+          <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+            <Card className="border-slate-200">
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>検知概要</span>
+                  <Badge className={cn('text-[10px] px-1.5 py-0.5', unifiedScore.color)}>{unifiedScore.label}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-sm space-y-4">
+                <div>
+                  <div className="text-xs text-slate-500 mb-1">検知理由</div>
+                  <p className="text-slate-800 leading-relaxed">{primaryReason}</p>
+                </div>
+                {detectionRuleData && (
+                  <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded p-2">
+                    <div className="font-semibold mb-1">検知ルール</div>
+                    <div className="space-y-0.5">
+                      <div>
+                        {detectionRuleData.rule_type === 'inactivity_72h' && '72時間放置検知'}
+                        {detectionRuleData.rule_type === 'sentiment_urgency' && '感情ダウン + 催促'}
+                        {detectionRuleData.rule_type === 'tone_frequency_drop' && 'トーン×頻度低下'}
+                        {detectionRuleData.rule_type === 'night_reply_rate' && '夜間返信異常'}
+                        {detectionRuleData.rule_type === 'recovery_monitoring' && '沈静化監視'}
+                        {detectionRuleData.rule_type === 'topic_repetition_tone_drop' && 'トピック繰り返し'}
+                        {!['inactivity_72h','sentiment_urgency','tone_frequency_drop','night_reply_rate','recovery_monitoring','topic_repetition_tone_drop'].includes(detectionRuleData.rule_type) && 'カスタムルール'}
                       </div>
-                    </div>
-                    <div>
-                      <div className={cn("text-xs mb-1", hasDetection ? "text-red-600" : "text-gray-500")}>感情分析</div>
-                      <div className={cn("font-semibold", hasDetection ? "text-red-800" : "text-gray-600")}>
-                        {sentimentLabel || 'neutral'} ({sentimentScore?.toFixed(2) || '0.00'})
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 簡潔な検知理由 */}
-                  <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                    <div className="text-xs text-slate-600 mb-1">検知理由</div>
-                    <div className="text-sm text-slate-800">
-                      {hasDetection ? (
-                        <>
-                          {allKeywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-1">
-                              {allKeywords.slice(0, 3).map((keyword, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
-                                  {keyword}
-                                </span>
-                              ))}
-                              {allKeywords.length > 3 && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                  +{allKeywords.length - 3}個
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div className="text-xs text-slate-500">
-                            {unifiedScore.explanation.slice(0, 2).join('、')}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-slate-500">リスク要因なし</span>
+                      {typeof detectionRuleData.score === 'number' && (
+                        <div>スコア {detectionRuleData.score.toFixed(0)}点</div>
+                      )}
+                      {typeof detectionRuleData.hours_since_last_activity === 'number' && (
+                        <div>
+                          未対応 {Math.floor(detectionRuleData.hours_since_last_activity / 24)}日{' '}
+                          {Math.round(detectionRuleData.hours_since_last_activity % 24)}時間
+                        </div>
                       )}
                     </div>
                   </div>
-
-
-                  {/* コンパクトなスコア詳細表示 */}
-                  <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200">
-                    <div className="text-xs font-medium text-slate-700 mb-2">スコア内訳</div>
-                    <div className="space-y-1 text-xs text-slate-600">
-                      <div className="flex items-center justify-between">
-                        <span>キーワード: {unifiedScore.breakdown.keywordScore}</span>
-                        <span>×{currentWeights.keywordWeight} = {Math.round(unifiedScore.breakdown.keywordScore * currentWeights.keywordWeight)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>感情: {unifiedScore.breakdown.sentimentScore}</span>
-                        <span>×{currentWeights.sentimentWeight} = {Math.round(unifiedScore.breakdown.sentimentScore * currentWeights.sentimentWeight)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>相乗効果: +{unifiedScore.breakdown.synergyScore}</span>
-                        <span>+{unifiedScore.breakdown.synergyScore}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>緊急度: ×{unifiedScore.breakdown.urgencyBoost}</span>
-                        <span>×{unifiedScore.breakdown.urgencyBoost}</span>
-                      </div>
-                      <div className="flex items-center justify-between font-medium text-slate-800 border-t pt-1">
-                        <span>最終スコア: {finalScore}</span>
-                        <span>= {Math.round((unifiedScore.breakdown.keywordScore * currentWeights.keywordWeight + unifiedScore.breakdown.sentimentScore * currentWeights.sentimentWeight + unifiedScore.breakdown.synergyScore) * unifiedScore.breakdown.urgencyBoost)}</span>
-                      </div>
-                    </div>
+                )}
+                <div>
+                  <div className="text-xs text-slate-500 mb-1">主要キーワード</div>
+                  <div className="flex flex-wrap gap-2">
+                    {allKeywords.length > 0 ? (
+                      allKeywords.map((keyword) => (
+                        <Badge key={keyword} variant="secondary" className="text-[11px]">
+                          {keyword}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400">キーワードの抽出はありません</span>
+                    )}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
 
+            <Card className="border-slate-200">
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">担当・アクション</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4 text-sm">
+                <div>
+                  <div className="text-xs text-slate-500 mb-1">担当者</div>
+                  <div className="font-semibold text-slate-900">{internalAssignee}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as Alert['status'])}
+                    className="flex-1 rounded border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  >
+                    <option value="unhandled">未対応</option>
+                    <option value="in_progress">対応中</option>
+                    <option value="completed">完了</option>
+                  </select>
+                  <Button size="sm" onClick={handleStatusUpdate} className="min-w-[72px]">
+                    更新
+                  </Button>
+                </div>
+                {segmentMeta?.actionLabel && (
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-900">
+                    <div className="font-semibold text-blue-800 text-sm mb-1">推奨アクション</div>
+                    <p className="leading-relaxed">{segmentMeta.actionLabel}</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleEscalation} className="flex-1">
+                    緊急共有
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
+          <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+            <Card className="border-slate-200">
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">最新の顧客シグナル</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-sm space-y-3">
+                {latestEmail ? (
+                  <>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>
+                        {latestEmail.sender} → {latestEmail.recipient}
+                      </span>
+                      <span>{formatDateTime(latestEmail.timestamp)}</span>
+                    </div>
+                    <div className="font-semibold text-slate-900">{latestEmail.subject}</div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {latestEmail.ai_summary || latestEmail.body?.slice(0, 180) || '詳細本文は表示できません。'}
+                    </p>
+                      <Button variant="link" size="sm" onClick={toggleHistory} className="px-0">
+                        {activeTab === 'history' ? '履歴を閉じる' : '履歴を開く'}
+                      </Button>
+                  </>
+                ) : (
+                  <p className="text-slate-500">直近のメッセージ情報はまだありません。</p>
+                )}
+              </CardContent>
+            </Card>
 
-                  {/* 簡潔な推奨アクション */}
-                  {hasDetection && (
-                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                      <div className="text-xs font-medium text-blue-700 mb-1">推奨アクション</div>
-                      <div className="text-sm text-blue-800">
-                        {finalScore >= 80 ? "即座に連絡・報告" : 
-                         finalScore >= 50 ? "24時間以内に対応" : 
-                         "通常業務時間内に対応"}
+            <Card className="border-slate-200">
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">主要指標</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-sm space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-[11px]">
+                    検知スコア {computedScore}点
+                  </Badge>
+                  {typeof urgencyScore === 'number' && (
+                    <Badge variant="secondary" className="text-[11px]">
+                      緊急度 {urgencyScore}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-[11px]">
+                    統合スコア {finalScore}
+                  </Badge>
+                </div>
+                <div className="space-y-1.5">
+                  {metricHighlights.length ? (
+                    metricHighlights.map((metric, idx) => (
+                      <div key={`metric-${idx}`} className="text-slate-700 flex items-start gap-2 text-xs">
+                        <span className="mt-0.5 text-slate-400">・</span>
+                        <span>{metric}</span>
                       </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400">追加の指標はまだありません。</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-3 h-9">
+              <TabsTrigger value="insights" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">詳細インサイト</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">スレッド履歴</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="insights" className="space-y-3 mt-3">
+              <Card>
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm">AIインサイト</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 text-sm">
+                  {aiLoading ? (
+                    <p className="text-slate-500">AIが分析しています...</p>
+                  ) : aiError ? (
+                    <p className="text-red-600 text-sm">{aiError}</p>
+                  ) : (
+                    <>
+                      {aiSummary ? (
+                        <div className="space-y-2">
+                          <div className="font-semibold">{aiSummary.headline}</div>
+                          <ul className="list-disc list-inside text-slate-700 space-y-1">
+                            {aiSummary.keyFindings.map((finding, idx) => (
+                              <li key={`finding-${idx}`}>{finding}</li>
+                            ))}
+                          </ul>
+                          <div className="text-xs text-slate-500">
+                            リスク: {aiSummary.riskLevel} / 信頼度 {Math.round(aiSummary.confidence * 100)}%
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-500">AI要約はまだ生成されていません。</p>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm">詳細メトリクス</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 text-sm">
+                  <div className="text-xs text-slate-500">{directionSummary}</div>
+                  {qualitySummary && (
+                    <div className="p-3 bg-slate-50 border rounded text-xs text-slate-700">
+                      <div className="font-semibold text-slate-900 text-sm mb-1">{qualitySummary.title}</div>
+                      <div>{qualitySummary.detail}</div>
+                      {qualitySummary.signals.length > 0 && (
+                        <ul className="list-disc list-inside mt-1 space-y-0.5">
+                          {qualitySummary.signals.map((signal, idx) => (
+                            <li key={`signal-${idx}`}>{signal}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </TabsContent>
 
+            <TabsContent value="history" className="space-y-3 mt-3">
+              <div className="text-right">
+                <Button variant="outline" size="sm" onClick={() => setActiveTab('insights')}>
+                  サマリーに戻る
+                </Button>
+              </div>
+              <Card>
+                <CardHeader className="py-2.5 px-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    コミュニケーション履歴
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                      {sortedEmails.length}件
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3">
+                  {sortedEmails.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      コミュニケーション履歴が見つかりませんでした
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {sortedEmails.map((email, index) => {
+                        const messageKey = `message-${index}`;
+                        const isLoading = loadingBodyIds[messageKey];
+                        const cachedBody = bodyCache[messageKey];
+                        const isInternalEmail = isInternal(email.sender || '');
+                        const isOpen = openMessageId === messageKey;
 
-            {/* Communication History */}
-            <Card>
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  コミュニケーション履歴
-                  <Badge variant="secondary" className="ml-2">
-                    {sortedEmails.length}件のメッセージ
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                {sortedEmails.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    コミュニケーション履歴が見つかりませんでした
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Message Thread View - Each reply as separate unit */}
-                    {sortedEmails.map((email, index) => {
-                      const messageKey = `message-${index}`;
-                      const isLoading = loadingBodyIds[messageKey];
-                      const cachedBody = bodyCache[messageKey];
-                      const isInternalEmail = isInternal(email.sender || '');
-                      const replyLevel = email.replyLevel || 0;
-                      
-                      return (
-                        <div key={messageKey} className="border rounded-lg overflow-hidden shadow-sm">
-                          {/* Message Header */}
-                          <div className={cn(
-                            "px-4 py-3 border-b",
-                            isInternalEmail 
-                              ? "bg-green-50 border-green-200" 
-                              : "bg-blue-50 border-blue-200"
-                          )}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                {/* Message Number and Reply Level */}
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    #{index + 1}
-                                  </Badge>
-                                  {replyLevel > 0 && (
-                                    <Badge variant="outline" className="text-xs">
-                                      <Reply className="h-3 w-3 mr-1" />
-                                      Re: {replyLevel}
+                        return (
+                          <div
+                            key={messageKey}
+                            className={cn(
+                              'border rounded-lg overflow-hidden transition-all',
+                              isInternalEmail
+                                ? 'border-l-4 border-l-green-500 bg-green-50/50'
+                                : 'border-l-4 border-l-blue-500 bg-blue-50/50'
+                            )}
+                          >
+                            <div className="px-3 py-2.5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                    <Badge variant="outline" className="text-[11px]">
+                                      {isInternalEmail ? '社内' : '顧客'}
                                     </Badge>
-                                  )}
-                                  <Badge 
-                                    variant={isInternalEmail ? "default" : "secondary"}
-                                    className="text-xs"
-                                  >
-                                    {isInternalEmail ? "内部" : "顧客"}
-                                  </Badge>
-                                </div>
-                                
-                                {/* Subject */}
-                                <div className={cn(
-                                  "font-medium text-sm mb-2",
-                                  isInternalEmail ? "text-green-900" : "text-blue-900"
-                                )}>
-                                  {email.subject || '件名なし'}
-                                </div>
-                                
-                                {/* From/To */}
-                                <div className={cn(
-                                  "text-sm",
-                                  isInternalEmail ? "text-green-700" : "text-blue-700"
-                                )}>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">
-                                      {email.sender}
-                                    </span>
-                                    <ArrowRight className="h-3 w-3" />
-                                    <span>{email.recipient}</span>
+                                    <span className="font-semibold text-slate-900 truncate">{email.sender}</span>
+                                    <ArrowRight className="h-3 w-3 text-slate-400" />
+                                    <span className="text-slate-700 truncate">{email.recipient}</span>
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {formatDateTime(email.timestamp)} ／ 件名: {email.subject || '（件名なし）'}
                                   </div>
                                 </div>
-                                
-                                {/* Timestamp */}
-                                <div className={cn(
-                                  "text-xs mt-1 flex items-center gap-1",
-                                  isInternalEmail ? "text-green-600" : "text-blue-600"
-                                )}>
-                                  <Clock className="h-3 w-3" />
-                                  {formatDateTime(email.timestamp)}
-                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7"
+                                  onClick={() => handleToggleMessage(messageKey, email.id)}
+                                >
+                                  {isOpen ? '閉じる' : '本文を表示'}
+                                </Button>
                               </div>
                             </div>
+                            {isOpen && (
+                              <div className="border-t bg-white px-3 py-2 text-sm whitespace-pre-line">
+                                {isLoading && (
+                                  <div className="text-xs text-slate-400">読み込み中...</div>
+                                )}
+                                {!isLoading && cachedBody && <div>{cachedBody}</div>}
+                                {!isLoading && !cachedBody && (
+                                  <div className="text-slate-500">
+                                    {email.ai_summary || email.body || '本文を取得できませんでした'}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          
-                          {/* Message Body */}
-                          <Accordion type="single" collapsible>
-                            <AccordionItem value={messageKey} className="border-none">
-                              <AccordionTrigger 
-                                className="px-4 py-3 hover:no-underline text-sm font-medium"
-                                onClick={() => loadBodyIfNeeded(messageKey, email.id)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <MessageCircle className="h-4 w-4" />
-                                  メール本文を表示
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="px-4 pb-4">
-                                <div className="bg-gray-50 rounded-lg p-4 border">
-                                  {isLoading ? (
-                                    <div className="flex items-center gap-2 text-gray-600 text-sm">
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                                      本文を読み込み中…
-                                    </div>
-                                  ) : cachedBody ? (
-                                    <div className="text-gray-900 text-sm whitespace-pre-wrap leading-relaxed">
-                                      {cachedBody}
-                                    </div>
-                                  ) : (
-                                    <div className="text-gray-900 text-sm whitespace-pre-wrap leading-relaxed">
-                                      {/* Try multiple fallback sources for email content */}
-                                      {email.body || 
-                                       email.ai_summary || 
-                                       (email as any).body_preview ||
-                                       (email as any).content ||
-                                       email.subject ? `件名: ${email.subject}\n\n※ 本文の詳細は読み込めませんでした。\n※ システム管理者にお問い合わせください。` : 
-                                       '※ 本文が見つかりません'}
-                                    </div>
-                                  )}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
-  );
-} 
+  </div>
+);
+}

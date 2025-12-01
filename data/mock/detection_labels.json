@@ -1,0 +1,26 @@
+{
+  "dummy-alert-001": {
+    "rule_type": "inactivity_72h",
+    "should_detect": true
+  },
+  "dummy-alert-003": {
+    "rule_type": "tone_frequency_drop",
+    "should_detect": true
+  },
+  "dummy-alert-201": {
+    "rule_type": "night_reply_rate",
+    "should_detect": true
+  },
+  "dummy-alert-202": {
+    "rule_type": "inactivity_72h",
+    "should_detect": true
+  },
+  "dummy-alert-203": {
+    "rule_type": "topic_repetition_tone_drop",
+    "should_detect": true
+  },
+  "dummy-alert-020": {
+    "rule_type": "sentiment_urgency",
+    "should_detect": false
+  }
+}

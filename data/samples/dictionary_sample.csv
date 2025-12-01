@@ -1,0 +1,10 @@
+phrase,category,weight,locale,enabled,updated_at
+"進捗いかがでしょうか",inquiry,1.2,ja,true,2025-10-24T09:00:00Z
+"ご返信いただけますでしょうか",inquiry,1.2,ja,true,2025-10-24T09:00:00Z
+"解約",churn,1.5,ja,true,2025-10-24T09:00:00Z
+"キャンセル",churn,1.4,ja,true,2025-10-24T09:00:00Z
+"至急",urgent,1.6,ja,true,2025-10-24T09:00:00Z
+"クレーム",complaint,1.5,ja,true,2025-10-24T09:00:00Z
+"値下げ",pricing,1.0,ja,true,2025-10-24T09:00:00Z
+
+

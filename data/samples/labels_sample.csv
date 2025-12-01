@@ -1,0 +1,8 @@
+message_id,thread_id,rule_id,importance,is_true_positive,notes,labeled_by,labeled_at
+MSG-001,TH-1001,inactivity_72h,high,true,"顧客が最後返信→72h未対応",admin@example.com,2025-10-24T09:00:00Z
+MSG-002,TH-1002,tone_down_inquiry,high,true,"進捗確認＋トーン低下",admin@example.com,2025-10-24T09:05:00Z
+MSG-003,TH-1003,night_reply_anomaly,medium,false,"ノイズ（自動通知）",admin@example.com,2025-10-24T09:07:00Z
+MSG-004,TH-1004,tone_and_freq_drop,medium,true,"直近7日で返信頻度急落",admin@example.com,2025-10-24T09:10:00Z
+MSG-005,TH-1005,,low,false,"ルール対象外だが参考で登録",admin@example.com,2025-10-24T09:12:00Z
+
+
