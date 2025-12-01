@@ -1,0 +1,43 @@
+[
+  {
+    "id": "evt-complaint-001",
+    "threadId": "thread-complaint-1",
+    "subject": "サポート対応への不満について",
+    "body": "先週の障害対応ですが、依頼してから48時間も放置されました。正直非常に不満です。今後の補償を含めて即時に回答してください。",
+    "customer": "Sunrise Manufacturing",
+    "channel": "email",
+    "direction": "inbound",
+    "assignee": "tanaka@cross-m.co.jp",
+    "sentimentScore": -0.62,
+    "occurredAt": "2025-07-12T09:30:00+09:00",
+    "keywords": ["不満", "補償", "障害"],
+    "urgencyHints": ["SLA", "要補償"]
+  },
+  {
+    "id": "evt-silence-001",
+    "threadId": "thread-silence-1",
+    "subject": "導入スケジュールのリマインド",
+    "body": "先週お送りした導入スケジュール案ですが、ご確認いただけましたでしょうか？社内稟議が迫っているため、48時間以内にご返信をいただけると助かります。",
+    "customer": "NextStep Ventures",
+    "channel": "email",
+    "direction": "outbound",
+    "assignee": "suzuki@cross-m.co.jp",
+    "sentimentScore": 0.05,
+    "hoursSinceLastReply": 76,
+    "occurredAt": "2025-07-12T08:00:00+09:00",
+    "keywords": ["リマインド", "導入スケジュール"]
+  },
+  {
+    "id": "evt-recovery-001",
+    "threadId": "thread-recovery-1",
+    "subject": "フォローアップミーティングのお願い",
+    "body": "改善施策の結果をレビューするため、今週木曜にフォローアップMTGを設定させてください。状況は良い方向に向かっています。",
+    "customer": "BlueOcean Retail",
+    "channel": "email",
+    "direction": "inbound",
+    "assignee": "yamada@cross-m.co.jp",
+    "sentimentScore": 0.32,
+    "occurredAt": "2025-07-12T07:45:00+09:00",
+    "keywords": ["改善", "フォロー", "レビュー"]
+  }
+]

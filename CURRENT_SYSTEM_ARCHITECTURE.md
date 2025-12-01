@@ -3,6 +3,41 @@
 ## 概要
 BigQueryベースのアラートシステムが整理され、以下の構成で動作しています。
 
+## アーキテクチャ図
+
+```
+flowchart TD
+    subgraph Ingestion[Data Ingestion]
+        GCS[GCS mbox Files]
+        Scripts[Node Scripts & Batch Jobs]
+    end
+
+    subgraph Storage[Storage / Processing]
+        BigQuery[(BigQuery Tables:\nemail_messages, alerts_v2, customers, keyword_logic)]
+    end
+
+    subgraph Backend[Backend Interfaces]
+        NextAPI[Next.js API Routes]
+        ExpressAPI[Express API (port 3002)]
+    end
+
+    subgraph Frontend[Frontend & Tools]
+        NextApp[Next.js App (port 3000)]
+        StaticUI[Static UI (port 3003)]
+    end
+
+    subgraph Monitoring[Monitoring & Ops]
+        ScriptsCLI[CLI Scripts (check/display/...)]
+    end
+
+    GCS --> Scripts --> BigQuery
+    ScriptsCLI --> BigQuery
+    BigQuery --> NextAPI --> NextApp
+    BigQuery --> ExpressAPI --> NextApp
+    ExpressAPI --> StaticUI
+    NextAPI --> StaticUI
+```
+
 ## ファイル構成
 
 ### メインアプリケーション

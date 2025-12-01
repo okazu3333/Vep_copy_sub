@@ -8,6 +8,17 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
     Building,
     Edit,
     Mail,
@@ -17,7 +28,8 @@ import {
     Users,
     Phone,
     Calendar,
-    Activity
+    Activity,
+    FolderPlus
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
@@ -112,6 +124,10 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
+  const [groupName, setGroupName] = useState("")
+  const [groupDescription, setGroupDescription] = useState("")
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -264,10 +280,127 @@ export default function UsersPage() {
                   <CardTitle>内部ユーザー一覧</CardTitle>
                   <CardDescription>自社グループドメインのユーザー管理（営業担当者情報含む）</CardDescription>
                 </div>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  ユーザー追加
-                </Button>
+                <div className="flex gap-2">
+                  <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <FolderPlus className="w-4 h-4 mr-2" />
+                        グループ作成
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>グループ作成</DialogTitle>
+                        <DialogDescription>
+                          ユーザーをグループ化して管理します。グループ名と説明を入力し、メンバーを選択してください。
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="group-name">グループ名 *</Label>
+                          <Input
+                            id="group-name"
+                            placeholder="例: 営業部Aチーム"
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="group-description">説明</Label>
+                          <Textarea
+                            id="group-description"
+                            placeholder="グループの説明を入力してください"
+                            value={groupDescription}
+                            onChange={(e) => setGroupDescription(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>メンバー選択</Label>
+                          <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                            {filteredUsers.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                ユーザーが見つかりません
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {filteredUsers.map((user) => (
+                                  <label
+                                    key={user.id || user.email}
+                                    className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedUsers.includes(user.id || user.email)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedUsers([...selectedUsers, user.id || user.email])
+                                        } else {
+                                          setSelectedUsers(selectedUsers.filter(id => id !== (user.id || user.email)))
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-sm">{user.name}</span>
+                                        {getRoleBadge(user.role)}
+                                        {getStatusBadge(user.status === 'active')}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground">{user.email}</span>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {selectedUsers.length > 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              {selectedUsers.length}名のメンバーが選択されています
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setGroupDialogOpen(false)
+                            setGroupName("")
+                            setGroupDescription("")
+                            setSelectedUsers([])
+                          }}
+                        >
+                          キャンセル
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            // TODO: グループ作成APIを呼び出す
+                            console.log('グループ作成:', {
+                              name: groupName,
+                              description: groupDescription,
+                              members: selectedUsers
+                            })
+                            // 成功したらダイアログを閉じる
+                            setGroupDialogOpen(false)
+                            setGroupName("")
+                            setGroupDescription("")
+                            setSelectedUsers([])
+                            // TODO: 成功メッセージを表示
+                            alert(`グループ「${groupName}」を作成しました`)
+                          }}
+                          disabled={!groupName.trim() || selectedUsers.length === 0}
+                        >
+                          作成
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    ユーザー追加
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>

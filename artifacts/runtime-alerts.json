@@ -1,0 +1,4516 @@
+{
+  "alerts": [
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764552294252",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-forecast-002-forecast_inactive-1764552294252",
+      "subject": "共有資料へのご返答待ち",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.12,
+      "department": "エンタープライズ営業",
+      "customer": "Metro Logistics",
+      "updated_at": "2025-07-09T18:00:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "提案資料送付後の未返信リマインド",
+      "emails": [
+        {
+          "id": "proto-forecast-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Metro Logistics",
+          "timestamp": "2025-07-09T18:00:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "提案資料送付後の未返信リマインド",
+          "subject": "共有資料へのご返答待ち",
+          "replyLevel": 0,
+          "body": "先ほどの提案資料をお送りします。3営業日ほどご返信をいただけておらず、追加情報が必要か念のためご連絡しました。"
+        }
+      ],
+      "company": "Metro Logistics",
+      "detection_score": 50,
+      "phrases": [],
+      "threadId": "thread-proto-forecast-inactive",
+      "messageId": "proto-forecast-002-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.496,
+      "urgencyScore": 52,
+      "detectionReasons": [
+        "こちらの連絡後に返信が途絶えているケース",
+        "最終返信から60h経過"
+      ],
+      "highlightKeywords": [],
+      "resolutionPrediction": {
+        "probability": 0.5666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 58,
+        "signals": [
+          "forecast_inactive triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "proto-forecast-002"
+    },
+    {
+      "id": "proto-forecast-002-occurrence_proposal_issue-1764552294252",
+      "subject": "共有資料へのご返答待ち",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.12,
+      "department": "エンタープライズ営業",
+      "customer": "Metro Logistics",
+      "updated_at": "2025-07-09T18:00:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "提案資料送付後の未返信リマインド",
+      "emails": [
+        {
+          "id": "proto-forecast-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Metro Logistics",
+          "timestamp": "2025-07-09T18:00:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "提案資料送付後の未返信リマインド",
+          "subject": "共有資料へのご返答待ち",
+          "replyLevel": 0,
+          "body": "先ほどの提案資料をお送りします。3営業日ほどご返信をいただけておらず、追加情報が必要か念のためご連絡しました。"
+        }
+      ],
+      "company": "Metro Logistics",
+      "detection_score": 66,
+      "phrases": [
+        "資料"
+      ],
+      "threadId": "thread-proto-forecast-inactive",
+      "messageId": "proto-forecast-002-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.6559999999999999,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 資料"
+      ],
+      "highlightKeywords": [
+        "資料"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 66
+      },
+      "sourceEventId": "proto-forecast-002"
+    },
+    {
+      "id": "proto-forecast-003-forecast_trust_risk-1764552294253",
+      "subject": "夜間対応の品質差について",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.28,
+      "department": "エンタープライズ営業",
+      "customer": "Sakura Retail",
+      "updated_at": "2025-07-09T02:45:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "夜間帯のサポート品質を懸念",
+      "emails": [
+        {
+          "id": "proto-forecast-003-msg",
+          "sender": "Sakura Retail",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-09T02:45:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "夜間帯のサポート品質を懸念",
+          "subject": "夜間対応の品質差について",
+          "replyLevel": 0,
+          "body": "夜間帯の回答内容にばらつきがあり、社内で心配の声が上がっています。特にエスカレーション基準を整理いただけますか？"
+        }
+      ],
+      "company": "Sakura Retail",
+      "detection_score": 54,
+      "phrases": [
+        "懸念"
+      ],
+      "threadId": "thread-proto-response",
+      "messageId": "proto-forecast-003-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.544,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: 懸念"
+      ],
+      "highlightKeywords": [
+        "懸念"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-003"
+    },
+    {
+      "id": "proto-forecast-003-forecast_response_quality-1764552294253",
+      "subject": "夜間対応の品質差について",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.28,
+      "department": "エンタープライズ営業",
+      "customer": "Sakura Retail",
+      "updated_at": "2025-07-09T02:45:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "夜間帯のサポート品質を懸念",
+      "emails": [
+        {
+          "id": "proto-forecast-003-msg",
+          "sender": "Sakura Retail",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-09T02:45:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "夜間帯のサポート品質を懸念",
+          "subject": "夜間対応の品質差について",
+          "replyLevel": 0,
+          "body": "夜間帯の回答内容にばらつきがあり、社内で心配の声が上がっています。特にエスカレーション基準を整理いただけますか？"
+        }
+      ],
+      "company": "Sakura Retail",
+      "detection_score": 49,
+      "phrases": [
+        "夜間",
+        "品質",
+        "ばらつき"
+      ],
+      "threadId": "thread-proto-response",
+      "messageId": "proto-forecast-003-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.494,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 夜間, 品質, ばらつき"
+      ],
+      "highlightKeywords": [
+        "夜間",
+        "品質",
+        "ばらつき"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 49
+      },
+      "sourceEventId": "proto-forecast-003"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764552294253",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764552294253",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-002-occurrence_reoccurrence-1764552294254",
+      "subject": "再発障害への正式回答のお願い",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.66,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T08:20:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "再発障害・役員エスカレーション・契約見直しを警告",
+      "emails": [
+        {
+          "id": "proto-occurrence-002-msg",
+          "sender": "VIP Client Inc.",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-11T08:20:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "再発障害・役員エスカレーション・契約見直しを警告",
+          "subject": "再発障害への正式回答のお願い",
+          "replyLevel": 0,
+          "body": "昨日の障害が再発し、社長レベルで厳しい指摘が入っています。暫定対処と恒久対策を今日中に共有いただけないと契約見直しになります。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 67,
+      "phrases": [
+        "再発"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-occurrence-002-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.6679999999999999,
+      "urgencyScore": 80,
+      "detectionReasons": [
+        "過去に解決済みの課題が再燃している",
+        "キーワード一致: 再発"
+      ],
+      "highlightKeywords": [
+        "再発"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.33333333333333337,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 30,
+        "signals": [
+          "occurrence_reoccurrence triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 67
+      },
+      "sourceEventId": "proto-occurrence-002"
+    },
+    {
+      "id": "proto-occurrence-003-occurrence_proposal_issue-1764552294254",
+      "subject": "見積条件の再確認と修正依頼",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.44,
+      "department": "エンタープライズ営業",
+      "customer": "NorthWind Consulting",
+      "updated_at": "2025-07-11T11:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "契約条項の差異と資料不足を指摘",
+      "emails": [
+        {
+          "id": "proto-occurrence-003-msg",
+          "sender": "NorthWind Consulting",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-11T11:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "契約条項の差異と資料不足を指摘",
+          "subject": "見積条件の再確認と修正依頼",
+          "replyLevel": 0,
+          "body": "提示いただいた契約書の条項が初回説明と異なります。修正案と機能別の費用の内訳を再共有いただけますか？"
+        }
+      ],
+      "company": "NorthWind Consulting",
+      "detection_score": 59,
+      "phrases": [
+        "修正",
+        "資料",
+        "再共有"
+      ],
+      "threadId": "thread-proto-proposal",
+      "messageId": "proto-occurrence-003-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.5920000000000001,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 修正, 資料, 再共有"
+      ],
+      "highlightKeywords": [
+        "修正",
+        "資料",
+        "再共有"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 59
+      },
+      "sourceEventId": "proto-occurrence-003"
+    },
+    {
+      "id": "proto-occurrence-004-forecast_inactive-1764552294254",
+      "subject": "障害対応状況の再共有",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.2,
+      "department": "エンタープライズ営業",
+      "customer": "Sakura Retail",
+      "updated_at": "2025-07-11T09:30:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "顧客沈黙へのフォロー",
+      "emails": [
+        {
+          "id": "proto-occurrence-004-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sakura Retail",
+          "timestamp": "2025-07-11T09:30:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "顧客沈黙へのフォロー",
+          "subject": "障害対応状況の再共有",
+          "replyLevel": 0,
+          "body": "先週の障害について進捗をご報告しましたが、お客様から3日間返信がなく、再確認のメールです。ログ提出や補填条件について追加情報があればご連絡ください。"
+        }
+      ],
+      "company": "Sakura Retail",
+      "detection_score": 48,
+      "phrases": [],
+      "threadId": "thread-proto-silence",
+      "messageId": "proto-occurrence-004-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.48,
+      "urgencyScore": 52,
+      "detectionReasons": [
+        "こちらの連絡後に返信が途絶えているケース",
+        "最終返信から80h経過"
+      ],
+      "highlightKeywords": [],
+      "resolutionPrediction": {
+        "probability": 0.5666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 58,
+        "signals": [
+          "forecast_inactive triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 48
+      },
+      "sourceEventId": "proto-occurrence-004"
+    },
+    {
+      "id": "proto-occurrence-004-occurrence_silence-1764552294254",
+      "subject": "障害対応状況の再共有",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.2,
+      "department": "エンタープライズ営業",
+      "customer": "Sakura Retail",
+      "updated_at": "2025-07-11T09:30:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "顧客沈黙へのフォロー",
+      "emails": [
+        {
+          "id": "proto-occurrence-004-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sakura Retail",
+          "timestamp": "2025-07-11T09:30:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "顧客沈黙へのフォロー",
+          "subject": "障害対応状況の再共有",
+          "replyLevel": 0,
+          "body": "先週の障害について進捗をご報告しましたが、お客様から3日間返信がなく、再確認のメールです。ログ提出や補填条件について追加情報があればご連絡ください。"
+        }
+      ],
+      "company": "Sakura Retail",
+      "detection_score": 66,
+      "phrases": [],
+      "threadId": "thread-proto-silence",
+      "messageId": "proto-occurrence-004-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.66,
+      "urgencyScore": 70,
+      "detectionReasons": [
+        "こちらの接触後に顧客側で沈黙が続くケース",
+        "最終返信から80h経過"
+      ],
+      "highlightKeywords": [],
+      "resolutionPrediction": {
+        "probability": 0.41666666666666663,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 40,
+        "signals": [
+          "occurrence_silence triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 66
+      },
+      "sourceEventId": "proto-occurrence-004"
+    },
+    {
+      "id": "proto-occurrence-004-occurrence_proposal_issue-1764552294254",
+      "subject": "障害対応状況の再共有",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.2,
+      "department": "エンタープライズ営業",
+      "customer": "Sakura Retail",
+      "updated_at": "2025-07-11T09:30:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "顧客沈黙へのフォロー",
+      "emails": [
+        {
+          "id": "proto-occurrence-004-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sakura Retail",
+          "timestamp": "2025-07-11T09:30:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "顧客沈黙へのフォロー",
+          "subject": "障害対応状況の再共有",
+          "replyLevel": 0,
+          "body": "先週の障害について進捗をご報告しましたが、お客様から3日間返信がなく、再確認のメールです。ログ提出や補填条件について追加情報があればご連絡ください。"
+        }
+      ],
+      "company": "Sakura Retail",
+      "detection_score": 64,
+      "phrases": [
+        "再共有"
+      ],
+      "threadId": "thread-proto-silence",
+      "messageId": "proto-occurrence-004-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.64,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 再共有"
+      ],
+      "highlightKeywords": [
+        "再共有"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 64
+      },
+      "sourceEventId": "proto-occurrence-004"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764552294255",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "proto-follow-002-occurrence_reoccurrence-1764552294255",
+      "subject": "再発障害の対策状況と役員向けレポート共有",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": 0.28,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T12:15:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "役員向けレポートとレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "VIP Client Inc.",
+          "timestamp": "2025-07-11T12:15:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "役員向けレポートとレビュー会の案内",
+          "subject": "再発障害の対策状況と役員向けレポート共有",
+          "replyLevel": 0,
+          "body": "恒久対策の骨子と社長レビュー向けレポート草案を添付しました。本日17時に改善レビュー会を設定済みですので、詳細は会議でご説明いたします。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 86,
+      "phrases": [
+        "再発"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-follow-002-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.856,
+      "urgencyScore": 80,
+      "detectionReasons": [
+        "過去に解決済みの課題が再燃している",
+        "キーワード一致: 再発"
+      ],
+      "highlightKeywords": [
+        "再発"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.33333333333333337,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 30,
+        "signals": [
+          "occurrence_reoccurrence triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 86
+      },
+      "sourceEventId": "proto-follow-002"
+    },
+    {
+      "id": "proto-follow-002-follow_recovery-1764552294255",
+      "subject": "再発障害の対策状況と役員向けレポート共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.28,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T12:15:00+09:00",
+      "status": "completed",
+      "ai_summary": "役員向けレポートとレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "VIP Client Inc.",
+          "timestamp": "2025-07-11T12:15:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "役員向けレポートとレビュー会の案内",
+          "subject": "再発障害の対策状況と役員向けレポート共有",
+          "replyLevel": 0,
+          "body": "恒久対策の骨子と社長レビュー向けレポート草案を添付しました。本日17時に改善レビュー会を設定済みですので、詳細は会議でご説明いたします。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 46,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-follow-002-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.456,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 46
+      },
+      "sourceEventId": "proto-follow-002"
+    },
+    {
+      "id": "proto-follow-003-occurrence_proposal_issue-1764552294255",
+      "subject": "修正版見積とフォロー会議のご案内",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.26,
+      "department": "エンタープライズ営業",
+      "customer": "NorthWind Consulting",
+      "updated_at": "2025-07-11T15:40:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "条項差異解消に向けたレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-003-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "NorthWind Consulting",
+          "timestamp": "2025-07-11T15:40:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "条項差異解消に向けたレビュー会の案内",
+          "subject": "修正版見積とフォロー会議のご案内",
+          "replyLevel": 0,
+          "body": "修正された条項と機能別の費用内訳を添付しました。木曜に各部門の責任者も交えたレビュー会をご用意しましたので、疑問点はすべてその場で解消させてください。"
+        }
+      ],
+      "company": "NorthWind Consulting",
+      "detection_score": 73,
+      "phrases": [
+        "修正"
+      ],
+      "threadId": "thread-proto-proposal",
+      "messageId": "proto-follow-003-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.732,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 修正"
+      ],
+      "highlightKeywords": [
+        "修正"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 73
+      },
+      "sourceEventId": "proto-follow-003"
+    },
+    {
+      "id": "proto-follow-003-follow_recovery-1764552294255",
+      "subject": "修正版見積とフォロー会議のご案内",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.26,
+      "department": "エンタープライズ営業",
+      "customer": "NorthWind Consulting",
+      "updated_at": "2025-07-11T15:40:00+09:00",
+      "status": "completed",
+      "ai_summary": "条項差異解消に向けたレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-003-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "NorthWind Consulting",
+          "timestamp": "2025-07-11T15:40:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "条項差異解消に向けたレビュー会の案内",
+          "subject": "修正版見積とフォロー会議のご案内",
+          "replyLevel": 0,
+          "body": "修正された条項と機能別の費用内訳を添付しました。木曜に各部門の責任者も交えたレビュー会をご用意しましたので、疑問点はすべてその場で解消させてください。"
+        }
+      ],
+      "company": "NorthWind Consulting",
+      "detection_score": 45,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-proto-proposal",
+      "messageId": "proto-follow-003-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.452,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 45
+      },
+      "sourceEventId": "proto-follow-003"
+    },
+    {
+      "id": "follow-test-dummy-alert-009-1764227599363-occurrence_proposal_issue-1764227599381",
+      "subject": "Re: 導入スケジュール見直しの夜間要請",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.6,
+      "department": "エンタープライズ営業",
+      "customer": "Delta Finance",
+      "updated_at": "2025-11-27T07:13:19.363Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-009-1764227599363-msg",
+          "sender": "suzuki@cross-m.co.jp",
+          "recipient": "Delta Finance",
+          "timestamp": "2025-11-27T07:13:19.363Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 導入スケジュール見直しの夜間要請",
+          "replyLevel": 0,
+          "body": "お世話になっております。Delta Finance 各位\n\n直近の「導入スケジュール見直しの夜間要請」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 加藤様 ご負担をお掛けしており申し訳ありません。Cross-Mの鈴木です。 次回以降は毎週水曜10:00スタートに変更いたします。 調整したスケジュールと新しい招待リンクをお送りしますのでご確認ください。 夜間帯の議事録も併せて共有いたします。 よろしくお願いいたします。 鈴木 Cross-M株式会社\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "suzuki@cross-m.co.jp",
+      "company": "Delta Finance",
+      "detection_score": 56,
+      "phrases": [
+        "変更"
+      ],
+      "threadId": "thread-009",
+      "messageId": "follow-test-dummy-alert-009-1764227599363-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.56,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 変更"
+      ],
+      "highlightKeywords": [
+        "変更"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 56
+      },
+      "sourceEventId": "follow-test-dummy-alert-009-1764227599363"
+    },
+    {
+      "id": "follow-test-dummy-alert-005-1764227514940-follow_recovery-1764227515112",
+      "subject": "Re: PoCレポート提出への強いフォロー",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0,
+      "department": "エンタープライズ営業",
+      "customer": "Metro Logistics",
+      "updated_at": "2025-11-27T07:11:54.940Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-005-1764227514940-msg",
+          "sender": "sato@cross-m.co.jp",
+          "recipient": "Metro Logistics",
+          "timestamp": "2025-11-27T07:11:54.940Z",
+          "sentiment": "neutral",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: PoCレポート提出への強いフォロー",
+          "replyLevel": 0,
+          "body": "お世話になっております。Metro Logistics 各位\n\n直近の「PoCレポート提出への強いフォロー」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 ご催促をいただき恐縮でございます。Cross-Mの佐藤です。 まず速報版のサマリーを送付いたします。 正式版は改善提案の章を明朝10時までに仕上げてお送りします。 失注リスクとなっている点は社内でも共有済みで、今夜中にレビュー体制を整えます。 よろしくお願いいたします。 佐藤 Cross-M株式会社\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "sato@cross-m.co.jp",
+      "company": "Metro Logistics",
+      "detection_score": 40,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-005",
+      "messageId": "follow-test-dummy-alert-005-1764227514940-msg",
+      "sentiment_label": "neutral",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.4,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 40
+      },
+      "sourceEventId": "follow-test-dummy-alert-005-1764227514940"
+    },
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764224945168",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764224945168",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764224945168",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-002-occurrence_reoccurrence-1764224945168",
+      "subject": "再発障害への正式回答のお願い",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.66,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T08:20:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "再発障害・役員エスカレーション・契約見直しを警告",
+      "emails": [
+        {
+          "id": "proto-occurrence-002-msg",
+          "sender": "VIP Client Inc.",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-11T08:20:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "再発障害・役員エスカレーション・契約見直しを警告",
+          "subject": "再発障害への正式回答のお願い",
+          "replyLevel": 0,
+          "body": "昨日の障害が再発し、社長レベルで厳しい指摘が入っています。暫定対処と恒久対策を今日中に共有いただけないと契約見直しになります。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 67,
+      "phrases": [
+        "再発"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-occurrence-002-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.6679999999999999,
+      "urgencyScore": 80,
+      "detectionReasons": [
+        "過去に解決済みの課題が再燃している",
+        "キーワード一致: 再発"
+      ],
+      "highlightKeywords": [
+        "再発"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.33333333333333337,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 30,
+        "signals": [
+          "occurrence_reoccurrence triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 67
+      },
+      "sourceEventId": "proto-occurrence-002"
+    },
+    {
+      "id": "proto-follow-002-occurrence_reoccurrence-1764224945169",
+      "subject": "再発障害の対策状況と役員向けレポート共有",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": 0.28,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T12:15:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "役員向けレポートとレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "VIP Client Inc.",
+          "timestamp": "2025-07-11T12:15:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "役員向けレポートとレビュー会の案内",
+          "subject": "再発障害の対策状況と役員向けレポート共有",
+          "replyLevel": 0,
+          "body": "恒久対策の骨子と社長レビュー向けレポート草案を添付しました。本日17時に改善レビュー会を設定済みですので、詳細は会議でご説明いたします。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 86,
+      "phrases": [
+        "再発"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-follow-002-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.856,
+      "urgencyScore": 80,
+      "detectionReasons": [
+        "過去に解決済みの課題が再燃している",
+        "キーワード一致: 再発"
+      ],
+      "highlightKeywords": [
+        "再発"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.33333333333333337,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 30,
+        "signals": [
+          "occurrence_reoccurrence triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 86
+      },
+      "sourceEventId": "proto-follow-002"
+    },
+    {
+      "id": "proto-follow-002-follow_recovery-1764224945169",
+      "subject": "再発障害の対策状況と役員向けレポート共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.28,
+      "department": "エンタープライズ営業",
+      "customer": "VIP Client Inc.",
+      "updated_at": "2025-07-11T12:15:00+09:00",
+      "status": "completed",
+      "ai_summary": "役員向けレポートとレビュー会の案内",
+      "emails": [
+        {
+          "id": "proto-follow-002-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "VIP Client Inc.",
+          "timestamp": "2025-07-11T12:15:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "役員向けレポートとレビュー会の案内",
+          "subject": "再発障害の対策状況と役員向けレポート共有",
+          "replyLevel": 0,
+          "body": "恒久対策の骨子と社長レビュー向けレポート草案を添付しました。本日17時に改善レビュー会を設定済みですので、詳細は会議でご説明いたします。"
+        }
+      ],
+      "company": "VIP Client Inc.",
+      "detection_score": 46,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-2",
+      "messageId": "proto-follow-002-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.456,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 46
+      },
+      "sourceEventId": "proto-follow-002"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764224945169",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224845814-forecast_response_quality-1764224845833",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:27:25.814Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224845814-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:27:25.814Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 65,
+      "phrases": [
+        "夜間"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224845814-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.65,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 夜間"
+      ],
+      "highlightKeywords": [
+        "夜間"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 65
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224845814"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224845814-occurrence_proposal_issue-1764224845833",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:27:25.814Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224845814-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:27:25.814Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 78,
+      "phrases": [
+        "資料"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224845814-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.78,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 資料"
+      ],
+      "highlightKeywords": [
+        "資料"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 78
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224845814"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224845814-follow_recovery-1764224845833",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:27:25.814Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224845814-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:27:25.814Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224845814-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224845814"
+    },
+    {
+      "id": "follow-test-dummy-alert-003-1764224843346-follow_recovery-1764224843370",
+      "subject": "Re: 新規提案への反応が薄い",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Future Tech",
+      "updated_at": "2025-11-27T06:27:23.346Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-003-1764224843346-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Tech",
+          "timestamp": "2025-11-27T06:27:23.346Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 新規提案への反応が薄い",
+          "replyLevel": 0,
+          "body": "お世話になっております。Future Tech 各位\n\n直近の「新規提案への反応が薄い」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 ありがとうございます。 正直なところ、現時点では社内での優先度が下がっており、検討が進んでいない状況です。 時期を見て改めてご相談させていただくかもしれません。 ご理解のほど、よろしくお願いいたします。 木村 BetaSoft株式会社\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Tech",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-003",
+      "messageId": "follow-test-dummy-alert-003-1764224843346-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-003-1764224843346"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764224840165-follow_recovery-1764224840442",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:27:20.165Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764224840165-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:27:20.165Z",
+          "sentiment": "neutral",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "お世話になっております。GreenLeaf Farms 各位\n\n直近の「価格改定への懸念表明」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 夜分恐れ入ります。鈴木です。 社内レビューで以下2点の確認依頼が出ました。 1) 8%ディスカウントは2年契約でも維持できるか 2) 拡張ユーザー枠の追加購入時に初期費用が発生するか 明日10:00の決裁会議前に、要点だけでもメールでご共有いただけると助かります。 お忙しいところ恐縮ですが、よろしくお願いいたし…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 40,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764224840165-msg",
+      "sentiment_label": "neutral",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.4,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 40
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764224840165"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224695326-forecast_response_quality-1764224695344",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:24:55.326Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224695326-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:24:55.326Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 65,
+      "phrases": [
+        "夜間"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224695326-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.65,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 夜間"
+      ],
+      "highlightKeywords": [
+        "夜間"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 65
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224695326"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224695326-occurrence_proposal_issue-1764224695344",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:24:55.326Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224695326-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:24:55.326Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 78,
+      "phrases": [
+        "資料"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224695326-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.78,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 資料"
+      ],
+      "highlightKeywords": [
+        "資料"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 78
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224695326"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224695326-follow_recovery-1764224695344",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:24:55.326Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224695326-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:24:55.326Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224695326-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224695326"
+    },
+    {
+      "id": "follow-test-dummy-alert-003-1764224691910-follow_recovery-1764224691928",
+      "subject": "Re: 新規提案への反応が薄い",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Future Tech",
+      "updated_at": "2025-11-27T06:24:51.910Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-003-1764224691910-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Tech",
+          "timestamp": "2025-11-27T06:24:51.910Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 新規提案への反応が薄い",
+          "replyLevel": 0,
+          "body": "お世話になっております。Future Tech 各位\n\n直近の「新規提案への反応が薄い」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 ありがとうございます。 正直なところ、現時点では社内での優先度が下がっており、検討が進んでいない状況です。 時期を見て改めてご相談させていただくかもしれません。 ご理解のほど、よろしくお願いいたします。 木村 BetaSoft株式会社\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Tech",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-003",
+      "messageId": "follow-test-dummy-alert-003-1764224691910-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-003-1764224691910"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764224687534-follow_recovery-1764224687748",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:24:47.534Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764224687534-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:24:47.534Z",
+          "sentiment": "neutral",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "お世話になっております。GreenLeaf Farms 各位\n\n直近の「価格改定への懸念表明」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 夜分恐れ入ります。鈴木です。 社内レビューで以下2点の確認依頼が出ました。 1) 8%ディスカウントは2年契約でも維持できるか 2) 拡張ユーザー枠の追加購入時に初期費用が発生するか 明日10:00の決裁会議前に、要点だけでもメールでご共有いただけると助かります。 お忙しいところ恐縮ですが、よろしくお願いいたし…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 40,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764224687534-msg",
+      "sentiment_label": "neutral",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.4,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 40
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764224687534"
+    },
+    {
+      "id": "follow-test-dummy-alert-003-1764224450137-follow_recovery-1764224450154",
+      "subject": "Re: 新規提案への反応が薄い",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Future Tech",
+      "updated_at": "2025-11-27T06:20:50.137Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-003-1764224450137-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Tech",
+          "timestamp": "2025-11-27T06:20:50.137Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 新規提案への反応が薄い",
+          "replyLevel": 0,
+          "body": "お世話になっております。Future Tech 各位\n\n直近の「新規提案への反応が薄い」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 ありがとうございます。 正直なところ、現時点では社内での優先度が下がっており、検討が進んでいない状況です。 時期を見て改めてご相談させていただくかもしれません。 ご理解のほど、よろしくお願いいたします。 木村 BetaSoft株式会社\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Tech",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-003",
+      "messageId": "follow-test-dummy-alert-003-1764224450137-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-003-1764224450137"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764224446298-follow_recovery-1764224446319",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:20:46.298Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764224446298-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:20:46.298Z",
+          "sentiment": "neutral",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "お世話になっております。GreenLeaf Farms 各位\n\n直近の「価格改定への懸念表明」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 夜分恐れ入ります。鈴木です。 社内レビューで以下2点の確認依頼が出ました。 1) 8%ディスカウントは2年契約でも維持できるか 2) 拡張ユーザー枠の追加購入時に初期費用が発生するか 明日10:00の決裁会議前に、要点だけでもメールでご共有いただけると助かります。 お忙しいところ恐縮ですが、よろしくお願いいたし…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 40,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764224446298-msg",
+      "sentiment_label": "neutral",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.4,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 40
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764224446298"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224430067-forecast_response_quality-1764224430087",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:20:30.067Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224430067-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:20:30.067Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 65,
+      "phrases": [
+        "夜間"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224430067-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.65,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 夜間"
+      ],
+      "highlightKeywords": [
+        "夜間"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 65
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224430067"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224430067-occurrence_proposal_issue-1764224430087",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:20:30.067Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224430067-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:20:30.067Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 78,
+      "phrases": [
+        "資料"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224430067-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.78,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 資料"
+      ],
+      "highlightKeywords": [
+        "資料"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 78
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224430067"
+    },
+    {
+      "id": "follow-test-dummy-alert-004-1764224430067-follow_recovery-1764224430087",
+      "subject": "Re: 競合比較資料の夜間対応",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.5,
+      "department": "エンタープライズ営業",
+      "customer": "Nishi Manufacturing",
+      "updated_at": "2025-11-27T06:20:30.067Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-004-1764224430067-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Nishi Manufacturing",
+          "timestamp": "2025-11-27T06:20:30.067Z",
+          "sentiment": "positive",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "お世話になっております。Nishi Manufacturing 各位\n\n直近の「競合比較資料の夜間対応」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 森様 ご連絡ありがとうございます。Cross-Mの田中です。 本日中にドラフトデッキをお送りします。 加えて、明日10:00に営業企画の責任者も同席のうえでレビューの時間を確保しました。 スライド構成案を添付しておりますので、夜間対応から日中帯へ切り替える段取りも併せてご相談させてください。 よろしくお願いいたします。…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Nishi Manufacturing",
+      "detection_score": 50,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-test-dummy-alert-004-1764224430067-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.5,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 50
+      },
+      "sourceEventId": "follow-test-dummy-alert-004-1764224430067"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764224402695-follow_recovery-1764224402879",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:20:02.695Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764224402695-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:20:02.695Z",
+          "sentiment": "neutral",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "お世話になっております。GreenLeaf Farms 各位\n\n直近の「価格改定への懸念表明」に関してご心配をおかけしております。\n現時点までの対応状況は以下の通りです：\n- 田中様 夜分恐れ入ります。鈴木です。 社内レビューで以下2点の確認依頼が出ました。 1) 8%ディスカウントは2年契約でも維持できるか 2) 拡張ユーザー枠の追加購入時に初期費用が発生するか 明日10:00の決裁会議前に、要点だけでもメールでご共有いただけると助かります。 お忙しいところ恐縮ですが、よろしくお願いいたし…\n\n本日中に暫定レポートを共有し、恒久対策のレビュー会議（日程候補: 明朝）をご提案いたします。\n追加で気になる点がございましたら遠慮なくご指摘ください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 40,
+      "phrases": [
+        "レビュー"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764224402695-msg",
+      "sentiment_label": "neutral",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.4,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: レビュー"
+      ],
+      "highlightKeywords": [
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 40
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764224402695"
+    },
+    {
+      "id": "follow-test-dummy-alert-003-1764224151880-forecast_tone_down-1764224151900",
+      "subject": "Re: 新規提案への反応が薄い",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "Future Tech",
+      "updated_at": "2025-11-27T06:15:51.880Z",
+      "status": "completed",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-003-1764224151880-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Tech",
+          "timestamp": "2025-11-27T06:15:51.880Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 新規提案への反応が薄い",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処後は安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Tech",
+      "detection_score": 37,
+      "phrases": [
+        "反応が薄い"
+      ],
+      "threadId": "thread-003",
+      "messageId": "follow-test-dummy-alert-003-1764224151880-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.37,
+      "urgencyScore": 45,
+      "detectionReasons": [
+        "感情スコア低下／未返信時間増加／返信頻度低下／夜間対応率上昇／キーワード検知",
+        "キーワード一致: 反応が薄い"
+      ],
+      "highlightKeywords": [
+        "反応が薄い"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.625,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 65,
+        "signals": [
+          "forecast_tone_down triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 37
+      },
+      "sourceEventId": "follow-test-dummy-alert-003-1764224151880"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764224107859-forecast_trust_risk-1764224108021",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:15:07.859Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764224107859-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:15:07.859Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処後は安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 52,
+      "phrases": [
+        "懸念"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764224107859-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.52,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: 懸念"
+      ],
+      "highlightKeywords": [
+        "懸念"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 52
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764224107859"
+    },
+    {
+      "id": "follow-test-dummy-alert-001-1764223851289-forecast_trust_risk-1764223851465",
+      "subject": "Re: 価格改定への懸念表明",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "GreenLeaf Farms",
+      "updated_at": "2025-11-27T06:10:51.289Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-test-dummy-alert-001-1764223851289-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "GreenLeaf Farms",
+          "timestamp": "2025-11-27T06:10:51.289Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処後は安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "GreenLeaf Farms",
+      "detection_score": 52,
+      "phrases": [
+        "懸念"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-test-dummy-alert-001-1764223851289-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.52,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: 懸念"
+      ],
+      "highlightKeywords": [
+        "懸念"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 52
+      },
+      "sourceEventId": "follow-test-dummy-alert-001-1764223851289"
+    },
+    {
+      "id": "follow-dummy-alert-004-1764219811329-forecast_trust_risk-1764219811346",
+      "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "Future Works",
+      "updated_at": "2025-11-27T05:03:31.329Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-dummy-alert-004-1764219811329-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Works",
+          "timestamp": "2025-11-27T05:03:31.329Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処により安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Works",
+      "detection_score": 52,
+      "phrases": [
+        "比較",
+        "競合"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-dummy-alert-004-1764219811329-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.52,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: 比較, 競合"
+      ],
+      "highlightKeywords": [
+        "比較",
+        "競合"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 52
+      },
+      "sourceEventId": "follow-dummy-alert-004-1764219811329"
+    },
+    {
+      "id": "follow-dummy-alert-004-1764219811329-forecast_response_quality-1764219811346",
+      "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "Future Works",
+      "updated_at": "2025-11-27T05:03:31.329Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-dummy-alert-004-1764219811329-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Works",
+          "timestamp": "2025-11-27T05:03:31.329Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処により安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Works",
+      "detection_score": 47,
+      "phrases": [
+        "夜間"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-dummy-alert-004-1764219811329-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.47,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 夜間"
+      ],
+      "highlightKeywords": [
+        "夜間"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "follow-dummy-alert-004-1764219811329"
+    },
+    {
+      "id": "follow-dummy-alert-004-1764219811329-occurrence_proposal_issue-1764219811346",
+      "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "Future Works",
+      "updated_at": "2025-11-27T05:03:31.329Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-dummy-alert-004-1764219811329-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Future Works",
+          "timestamp": "2025-11-27T05:03:31.329Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 契約更新フォロー - 導入フロー整理｜競合比較資料の夜間対応",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処により安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Future Works",
+      "detection_score": 60,
+      "phrases": [
+        "資料"
+      ],
+      "threadId": "thread-004",
+      "messageId": "follow-dummy-alert-004-1764219811329-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.6,
+      "urgencyScore": 68,
+      "detectionReasons": [
+        "提案内容に対する齟齬・修正依頼を検知",
+        "キーワード一致: 資料"
+      ],
+      "highlightKeywords": [
+        "資料"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.43333333333333335,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 42,
+        "signals": [
+          "occurrence_proposal_issue triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 60
+      },
+      "sourceEventId": "follow-dummy-alert-004-1764219811329"
+    },
+    {
+      "id": "follow-dummy-alert-001-1764219772467-forecast_trust_risk-1764219772619",
+      "subject": "Re: 契約更新フォロー - 予算取り込み｜価格改定への懸念表明",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.4,
+      "department": "エンタープライズ営業",
+      "customer": "Metro Logi",
+      "updated_at": "2025-11-27T05:02:52.467Z",
+      "status": "in_progress",
+      "ai_summary": "フォローアップ報告",
+      "emails": [
+        {
+          "id": "follow-dummy-alert-001-1764219772467-msg",
+          "sender": "tanaka@cross-m.co.jp",
+          "recipient": "Metro Logi",
+          "timestamp": "2025-11-27T05:02:52.467Z",
+          "sentiment": "negative",
+          "ai_summary": "フォローアップ報告",
+          "subject": "Re: 契約更新フォロー - 予算取り込み｜価格改定への懸念表明",
+          "replyLevel": 0,
+          "body": "障害対応の進捗をご報告いたします。暫定対処により安定稼働を確認済みで、恒久対応のレビュー会議を設定させてください。"
+        }
+      ],
+      "assignee": "tanaka@cross-m.co.jp",
+      "company": "Metro Logi",
+      "detection_score": 52,
+      "phrases": [
+        "懸念"
+      ],
+      "threadId": "thread-001",
+      "messageId": "follow-dummy-alert-001-1764219772467-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.52,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: 懸念"
+      ],
+      "highlightKeywords": [
+        "懸念"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 52
+      },
+      "sourceEventId": "follow-dummy-alert-001-1764219772467"
+    },
+    {
+      "id": "manual-1764219491702-occurrence_followup-1764219491723",
+      "subject": "障害が続いておりお客様が激怒しています",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.65,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-11-27T04:58:11.702Z",
+      "status": "unhandled",
+      "ai_summary": "障害が続いておりお客様が激怒しています",
+      "emails": [
+        {
+          "id": "manual-1764219491702-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "sales@cross-m.co.jp",
+          "timestamp": "2025-11-27T04:58:11.702Z",
+          "sentiment": "negative",
+          "ai_summary": "障害が続いておりお客様が激怒しています",
+          "subject": "障害が続いておりお客様が激怒しています",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害で顧客対応が止まっています。至急状況と補償の方針をください。これ以上遅れると失注になる見込みです。"
+        }
+      ],
+      "assignee": "sales@cross-m.co.jp",
+      "company": "Sunrise Manufacturing",
+      "detection_score": 59,
+      "phrases": [
+        "至急"
+      ],
+      "messageId": "manual-1764219491702-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.59,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 59
+      },
+      "sourceEventId": "manual-1764219491702"
+    },
+    {
+      "id": "manual-1764219481906-forecast_trust_risk-1764219481935",
+      "subject": "ROIが見えず社内承認が止まっています",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.25,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-11-27T04:58:01.906Z",
+      "status": "in_progress",
+      "ai_summary": "ROIが見えず社内承認が止まっています",
+      "emails": [
+        {
+          "id": "manual-1764219481906-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "sales@cross-m.co.jp",
+          "timestamp": "2025-11-27T04:58:01.906Z",
+          "sentiment": "negative",
+          "ai_summary": "ROIが見えず社内承認が止まっています",
+          "subject": "ROIが見えず社内承認が止まっています",
+          "replyLevel": 0,
+          "body": "社内の決裁者からROIの根拠を求められており、このままでは稟議が却下されそうです。競合比較や条件見直しがあれば共有いただけますか？"
+        }
+      ],
+      "assignee": "sales@cross-m.co.jp",
+      "company": "Sunrise Manufacturing",
+      "detection_score": 55,
+      "phrases": [
+        "ROI",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "messageId": "manual-1764219481906-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.55,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 55
+      },
+      "sourceEventId": "manual-1764219481906"
+    },
+    {
+      "id": "manual-1764219481906-occurrence_followup-1764219481935",
+      "subject": "ROIが見えず社内承認が止まっています",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.25,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-11-27T04:58:01.906Z",
+      "status": "unhandled",
+      "ai_summary": "ROIが見えず社内承認が止まっています",
+      "emails": [
+        {
+          "id": "manual-1764219481906-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "sales@cross-m.co.jp",
+          "timestamp": "2025-11-27T04:58:01.906Z",
+          "sentiment": "negative",
+          "ai_summary": "ROIが見えず社内承認が止まっています",
+          "subject": "ROIが見えず社内承認が止まっています",
+          "replyLevel": 0,
+          "body": "社内の決裁者からROIの根拠を求められており、このままでは稟議が却下されそうです。競合比較や条件見直しがあれば共有いただけますか？"
+        }
+      ],
+      "assignee": "sales@cross-m.co.jp",
+      "company": "Sunrise Manufacturing",
+      "detection_score": 67,
+      "phrases": [
+        "決裁"
+      ],
+      "messageId": "manual-1764219481906-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.67,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 決裁"
+      ],
+      "highlightKeywords": [
+        "決裁"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 67
+      },
+      "sourceEventId": "manual-1764219481906"
+    },
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764052144230",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764052144230",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764052144230",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764052144231",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764050385351",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-occurrence-001-forecast_response_quality-1764050385352",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 41,
+      "phrases": [
+        "遅延"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.408,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 遅延"
+      ],
+      "highlightKeywords": [
+        "遅延"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 41
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764050385352",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764050385352",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764050385352",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764050077323",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-occurrence-001-forecast_response_quality-1764050077324",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 41,
+      "phrases": [
+        "遅延"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.408,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 遅延"
+      ],
+      "highlightKeywords": [
+        "遅延"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 41
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764050077324",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764050077324",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764050077325",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "proto-forecast-001-forecast_trust_risk-1764048649103",
+      "subject": "ROIと進め方に関する不安",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.32,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T05:10:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "ROI/競合比較への不安を再確認したい",
+      "emails": [
+        {
+          "id": "proto-forecast-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T05:10:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "ROI/競合比較への不安を再確認したい",
+          "subject": "ROIと進め方に関する不安",
+          "replyLevel": 0,
+          "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 54,
+      "phrases": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-forecast-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.536,
+      "urgencyScore": 60,
+      "detectionReasons": [
+        "ROI や進め方への不安が顕在化しているケース",
+        "キーワード一致: ROI, 不安, 懸念, 比較, 競合, 稟議"
+      ],
+      "highlightKeywords": [
+        "ROI",
+        "不安",
+        "懸念",
+        "比較",
+        "競合",
+        "稟議"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 50,
+        "signals": [
+          "forecast_trust_risk triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 54
+      },
+      "sourceEventId": "proto-forecast-001"
+    },
+    {
+      "id": "proto-occurrence-001-forecast_response_quality-1764048649104",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "in_progress",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 41,
+      "phrases": [
+        "遅延"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "forecast",
+      "segmentConfidence": 0.408,
+      "urgencyScore": 55,
+      "detectionReasons": [
+        "夜間対応や回答品質に関する懸念を検知",
+        "キーワード一致: 遅延"
+      ],
+      "highlightKeywords": [
+        "遅延"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.5416666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 55,
+        "signals": [
+          "forecast_response_quality triggered",
+          "segment:forecast"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 41
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_complaint-1764048649104",
+      "subject": "障害対応についての強い不満",
+      "severity": "A",
+      "level": "high",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 71,
+      "phrases": [
+        "不満",
+        "クレーム"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.708,
+      "urgencyScore": 85,
+      "detectionReasons": [
+        "顧客から機能・価格・対応面の不満が届いている",
+        "キーワード一致: 不満, クレーム"
+      ],
+      "highlightKeywords": [
+        "不満",
+        "クレーム"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.29166666666666663,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Low",
+        "score": 25,
+        "signals": [
+          "occurrence_complaint triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 71
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-occurrence-001-occurrence_followup-1764048649104",
+      "subject": "障害対応についての強い不満",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": -0.71,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T10:42:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "障害・補償要求・サポート遅延",
+      "emails": [
+        {
+          "id": "proto-occurrence-001-msg",
+          "sender": "Sunrise Manufacturing",
+          "recipient": "ops@cross-m.co.jp",
+          "timestamp": "2025-07-10T10:42:00+09:00",
+          "sentiment": "negative",
+          "ai_summary": "障害・補償要求・サポート遅延",
+          "subject": "障害対応についての強い不満",
+          "replyLevel": 0,
+          "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 58,
+      "phrases": [
+        "至急"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-occurrence-001-msg",
+      "sentiment_label": "negative",
+      "negative_flag": true,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.578,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: 至急"
+      ],
+      "highlightKeywords": [
+        "至急"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 58
+      },
+      "sourceEventId": "proto-occurrence-001"
+    },
+    {
+      "id": "proto-follow-001-occurrence_followup-1764048649105",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "B",
+      "level": "medium",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "unhandled",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 79,
+      "phrases": [
+        "フォロー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "occurrence",
+      "segmentConfidence": 0.7879999999999999,
+      "urgencyScore": 72,
+      "detectionReasons": [
+        "催促キーワード／クレームキーワード／返信停止／提案修正要求／再発ワード",
+        "キーワード一致: フォロー"
+      ],
+      "highlightKeywords": [
+        "フォロー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.4,
+        "ttrHours": 6
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 38,
+        "signals": [
+          "occurrence_followup triggered",
+          "segment:occurrence"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 79
+      },
+      "sourceEventId": "proto-follow-001"
+    },
+    {
+      "id": "proto-follow-001-follow_recovery-1764048649106",
+      "subject": "フォローアップと改善計画のご共有",
+      "severity": "C",
+      "level": "low",
+      "sentiment_score": 0.34,
+      "department": "エンタープライズ営業",
+      "customer": "Sunrise Manufacturing",
+      "updated_at": "2025-07-10T14:05:00+09:00",
+      "status": "completed",
+      "ai_summary": "改善済みの共有とフォローMTGの依頼",
+      "emails": [
+        {
+          "id": "proto-follow-001-msg",
+          "sender": "ops@cross-m.co.jp",
+          "recipient": "Sunrise Manufacturing",
+          "timestamp": "2025-07-10T14:05:00+09:00",
+          "sentiment": "positive",
+          "ai_summary": "改善済みの共有とフォローMTGの依頼",
+          "subject": "フォローアップと改善計画のご共有",
+          "replyLevel": 0,
+          "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。"
+        }
+      ],
+      "company": "Sunrise Manufacturing",
+      "detection_score": 47,
+      "phrases": [
+        "改善",
+        "レビュー"
+      ],
+      "threadId": "thread-proto-1",
+      "messageId": "proto-follow-001-msg",
+      "sentiment_label": "positive",
+      "negative_flag": false,
+      "primarySegment": "follow",
+      "segmentConfidence": 0.46799999999999997,
+      "urgencyScore": 40,
+      "detectionReasons": [
+        "施策後の改善状況、ポジティブなフォロー依頼",
+        "キーワード一致: 改善, レビュー"
+      ],
+      "highlightKeywords": [
+        "改善",
+        "レビュー"
+      ],
+      "resolutionPrediction": {
+        "probability": 0.6666666666666667,
+        "ttrHours": 18
+      },
+      "quality": {
+        "level": "Medium",
+        "score": 70,
+        "signals": [
+          "follow_recovery triggered",
+          "segment:follow"
+        ]
+      },
+      "detectionRule": {
+        "rule_type": "sentiment_urgency",
+        "score": 47
+      },
+      "sourceEventId": "proto-follow-001"
+    }
+  ],
+  "updatedAt": "2025-12-01T01:24:54.257Z"
+}

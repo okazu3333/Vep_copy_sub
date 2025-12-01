@@ -1,0 +1,8 @@
+{
+  "dummy-alert-001": "inactivity_72h",
+  "dummy-alert-003": "tone_frequency_drop",
+  "dummy-alert-201": "night_reply_rate",
+  "dummy-alert-202": "inactivity_72h",
+  "dummy-alert-203": "topic_repetition_tone_drop",
+  "dummy-alert-020": "sentiment_urgency"
+}

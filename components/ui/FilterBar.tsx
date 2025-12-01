@@ -50,22 +50,22 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
   return (
     <div className="space-y-4">
       {/* Filter Controls - 横一列表示 */}
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap items-end gap-3 sm:gap-4 lg:grid lg:grid-cols-[minmax(280px,1fr)_repeat(3,minmax(150px,200px))_auto] lg:items-center">
         {/* 検索窓を大きくする */}
-        <div className="flex-1 min-w-[300px]">
-          <label className="text-xs text-gray-500">検索</label>
+        <div className="flex-1 min-w-[240px] sm:min-w-[260px] lg:col-span-1 w-full">
+          <label className="text-xs text-gray-500 mb-1 block">検索</label>
           <Input 
             value={filters.search} 
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })} 
             placeholder="件名・キーワード・顧客名で検索" 
-            className="text-base"
+            className="text-base w-full"
           />
         </div>
         
-        <div className="min-w-[180px]">
-          <label className="text-xs text-gray-500">ソート順</label>
+        <div className="min-w-[160px] sm:min-w-[180px] lg:w-full w-full">
+          <label className="text-xs text-gray-500 mb-1 block">ソート順</label>
           <Select value={filters.severity} onValueChange={(v) => onFiltersChange({ ...filters, severity: v })}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
@@ -76,10 +76,10 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
           </Select>
         </div>
         
-        <div className="min-w-[120px]">
-          <label className="text-xs text-gray-500">ステータス</label>
+        <div className="min-w-[140px] lg:w-full w-full">
+          <label className="text-xs text-gray-500 mb-1 block">ステータス</label>
           <Select value={filters.status} onValueChange={(v) => onFiltersChange({ ...filters, status: v })}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="すべて" />
             </SelectTrigger>
             <SelectContent>
@@ -92,10 +92,10 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
         </div>
         
         {!hidePeriod && (
-          <div className="min-w-[120px]">
-            <label className="text-xs text-gray-500">分析期間</label>
+          <div className="min-w-[140px] lg:w-full w-full">
+            <label className="text-xs text-gray-500 mb-1 block">分析期間</label>
             <Select value={filters.period} onValueChange={(v) => onFiltersChange({ ...filters, period: v })}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="すべて" />
               </SelectTrigger>
               <SelectContent>
@@ -109,12 +109,12 @@ export function FilterBar({ filters, onFiltersChange, hidePeriod = false }: Filt
         )}
         
         {/* クリアボタン */}
-        <div className="flex items-end">
+        <div className="flex items-end lg:justify-end w-full lg:w-auto">
           <Button 
             variant="outline" 
             size="default"
             onClick={handleClear}
-            className="h-10"
+            className="h-10 w-full lg:w-auto"
           >
             クリア
           </Button>

@@ -1,0 +1,222 @@
+[
+  {
+    "label": "予兆: ROI不安",
+    "notes": "ROIや稟議への懸念が表出した予兆メール",
+    "event": {
+      "id": "proto-forecast-001",
+      "threadId": "thread-proto-1",
+      "subject": "ROIと進め方に関する不安",
+      "body": "ROIが見えない状態で稟議を進めるのは社内でも懸念が出ています。競合比較をした上で割引や条件を見直せますか？",
+      "summary": "ROI/競合比較への不安を再確認したい",
+      "customer": "Sunrise Manufacturing",
+      "channel": "email",
+      "direction": "inbound",
+      "sentimentScore": -0.32,
+      "urgencyHints": ["ROI", "稟議"],
+      "keywords": ["ROI", "競合", "懸念"],
+      "occurredAt": "2025-07-10T05:10:00+09:00",
+      "hoursSinceLastReply": 12,
+      "language": "ja"
+    },
+    "expectedSegment": "forecast",
+    "expectedRule": "forecast_trust_risk"
+  },
+  {
+    "label": "予兆: 返信途絶リスク",
+    "notes": "こちらから送った資料共有後に3日間返答がないケース",
+    "event": {
+      "id": "proto-forecast-002",
+      "threadId": "thread-proto-forecast-inactive",
+      "subject": "共有資料へのご返答待ち",
+      "body": "先ほどの提案資料をお送りします。3営業日ほどご返信をいただけておらず、追加情報が必要か念のためご連絡しました。",
+      "summary": "提案資料送付後の未返信リマインド",
+      "customer": "Metro Logistics",
+      "channel": "email",
+      "direction": "outbound",
+      "sentimentScore": -0.12,
+      "urgencyHints": ["未返信", "フォロー"],
+      "keywords": ["未返信", "フォロー", "ご返答"],
+      "occurredAt": "2025-07-09T18:00:00+09:00",
+      "hoursSinceLastReply": 60,
+      "language": "ja"
+    },
+    "expectedSegment": "forecast",
+    "expectedRule": "forecast_inactive"
+  },
+  {
+    "label": "予兆: 対応品質のブレ",
+    "notes": "夜間回答の品質ばらつきに関する懸念",
+    "event": {
+      "id": "proto-forecast-003",
+      "threadId": "thread-proto-response",
+      "subject": "夜間対応の品質差について",
+      "body": "夜間帯の回答内容にばらつきがあり、社内で心配の声が上がっています。特にエスカレーション基準を整理いただけますか？",
+      "summary": "夜間帯のサポート品質を懸念",
+      "customer": "Sakura Retail",
+      "channel": "email",
+      "direction": "inbound",
+      "sentimentScore": -0.28,
+      "urgencyHints": ["夜間", "品質"],
+      "keywords": ["夜間", "品質", "ばらつき"],
+      "occurredAt": "2025-07-09T02:45:00+09:00",
+      "hoursSinceLastReply": 8,
+      "language": "ja"
+    },
+    "expectedSegment": "forecast",
+    "expectedRule": "forecast_response_quality"
+  },
+  {
+    "label": "発生: 障害クレーム",
+    "notes": "障害発生によるトラブル検知（occurrence）",
+    "event": {
+      "id": "proto-occurrence-001",
+      "threadId": "thread-proto-1",
+      "subject": "障害対応についての強い不満",
+      "body": "昨日からシステム障害が続いています。サポートの返信も遅く、社内でクレームが噴出しています。至急対応状況と補償案を提示してください。",
+      "summary": "障害・補償要求・サポート遅延",
+      "customer": "Sunrise Manufacturing",
+      "channel": "email",
+      "direction": "inbound",
+      "sentimentScore": -0.71,
+      "urgencyHints": ["障害", "補償", "至急"],
+      "keywords": ["障害", "クレーム", "補償"],
+      "occurredAt": "2025-07-10T10:42:00+09:00",
+      "hoursSinceLastReply": 3,
+      "language": "ja"
+    },
+    "expectedSegment": "occurrence",
+    "expectedRule": "occurrence_complaint"
+  },
+  {
+    "label": "発生: VIPクライアント障害再燃",
+    "notes": "障害が再発し経営層エスカレーションが掛かったケース",
+    "event": {
+      "id": "proto-occurrence-002",
+      "threadId": "thread-proto-2",
+      "subject": "再発障害への正式回答のお願い",
+      "body": "昨日の障害が再発し、社長レベルで厳しい指摘が入っています。暫定対処と恒久対策を今日中に共有いただけないと契約見直しになります。",
+      "summary": "再発障害・役員エスカレーション・契約見直しを警告",
+      "customer": "VIP Client Inc.",
+      "channel": "email",
+      "direction": "inbound",
+      "sentimentScore": -0.66,
+      "urgencyHints": ["再発", "契約見直し", "至急"],
+      "keywords": ["再発", "障害", "契約", "至急"],
+      "occurredAt": "2025-07-11T08:20:00+09:00",
+      "hoursSinceLastReply": 5,
+      "language": "ja"
+    },
+    "expectedSegment": "occurrence",
+    "expectedRule": "occurrence_reoccurrence"
+  },
+  {
+    "label": "発生: 提案条件の認識齟齬",
+    "notes": "見積修正と条項差異を指摘する inbound",
+    "event": {
+      "id": "proto-occurrence-003",
+      "threadId": "thread-proto-proposal",
+      "subject": "見積条件の再確認と修正依頼",
+      "body": "提示いただいた契約書の条項が初回説明と異なります。修正案と機能別の費用の内訳を再共有いただけますか？",
+      "summary": "契約条項の差異と資料不足を指摘",
+      "customer": "NorthWind Consulting",
+      "channel": "email",
+      "direction": "inbound",
+      "sentimentScore": -0.44,
+      "urgencyHints": ["修正", "資料"],
+      "keywords": ["修正", "条項", "資料再共有"],
+      "occurredAt": "2025-07-11T11:10:00+09:00",
+      "hoursSinceLastReply": 6,
+      "language": "ja"
+    },
+    "expectedSegment": "occurrence",
+    "expectedRule": "occurrence_proposal_issue"
+  },
+  {
+    "label": "発生: フォロー催促（沈黙）",
+    "notes": "こちらから連絡したが72時間返答がないケース",
+    "event": {
+      "id": "proto-occurrence-004",
+      "threadId": "thread-proto-silence",
+      "subject": "障害対応状況の再共有",
+      "body": "先週の障害について進捗をご報告しましたが、お客様から3日間返信がなく、再確認のメールです。ログ提出や補填条件について追加情報があればご連絡ください。",
+      "summary": "顧客沈黙へのフォロー",
+      "customer": "Sakura Retail",
+      "channel": "email",
+      "direction": "outbound",
+      "sentimentScore": -0.2,
+      "urgencyHints": ["沈黙", "フォロー"],
+      "keywords": ["返信がない", "再確認", "沈黙"],
+      "occurredAt": "2025-07-11T09:30:00+09:00",
+      "hoursSinceLastReply": 80,
+      "language": "ja"
+    },
+    "expectedSegment": "occurrence",
+    "expectedRule": "occurrence_silence"
+  },
+  {
+    "label": "フォロー: サクセスの改善報告",
+    "notes": "障害後のフォローアップメール（followセグメント）",
+    "event": {
+      "id": "proto-follow-001",
+      "threadId": "thread-proto-1",
+      "subject": "フォローアップと改善計画のご共有",
+      "body": "暫定パッチを適用し安定稼働を確認済みです。木曜までに恒久対策のレビュー会を設定させてください。状況は改善していますので、ご安心いただければ幸いです。",
+      "summary": "改善済みの共有とフォローMTGの依頼",
+      "customer": "Sunrise Manufacturing",
+      "channel": "email",
+      "direction": "outbound",
+      "sentimentScore": 0.34,
+      "urgencyHints": ["フォロー", "改善"],
+      "keywords": ["改善", "フォロー", "共有", "レビュー"],
+      "occurredAt": "2025-07-10T14:05:00+09:00",
+      "hoursSinceLastReply": 1,
+      "language": "ja"
+    },
+    "expectedSegment": "follow",
+    "expectedRule": "follow_recovery"
+  },
+  {
+    "label": "フォロー: 役員向け改善レポート提出",
+    "notes": "再発障害に対する役員向け対応状況の共有",
+    "event": {
+      "id": "proto-follow-002",
+      "threadId": "thread-proto-2",
+      "subject": "再発障害の対策状況と役員向けレポート共有",
+      "body": "恒久対策の骨子と社長レビュー向けレポート草案を添付しました。本日17時に改善レビュー会を設定済みですので、詳細は会議でご説明いたします。",
+      "summary": "役員向けレポートとレビュー会の案内",
+      "customer": "VIP Client Inc.",
+      "channel": "email",
+      "direction": "outbound",
+      "sentimentScore": 0.28,
+      "urgencyHints": ["フォロー", "役員共有"],
+      "keywords": ["改善", "レビュー会", "レポート"],
+      "occurredAt": "2025-07-11T12:15:00+09:00",
+      "hoursSinceLastReply": 1,
+      "language": "ja"
+    },
+    "expectedSegment": "follow",
+    "expectedRule": "follow_recovery"
+  },
+  {
+    "label": "フォロー: 価格再提案と安心材料",
+    "notes": "提案差異へのフォローで上長レビューの場を設定",
+    "event": {
+      "id": "proto-follow-003",
+      "threadId": "thread-proto-proposal",
+      "subject": "修正版見積とフォロー会議のご案内",
+      "body": "修正された条項と機能別の費用内訳を添付しました。木曜に各部門の責任者も交えたレビュー会をご用意しましたので、疑問点はすべてその場で解消させてください。",
+      "summary": "条項差異解消に向けたレビュー会の案内",
+      "customer": "NorthWind Consulting",
+      "channel": "email",
+      "direction": "outbound",
+      "sentimentScore": 0.26,
+      "urgencyHints": ["フォロー", "レビュー会"],
+      "keywords": ["修正案", "レビュー会"],
+      "occurredAt": "2025-07-11T15:40:00+09:00",
+      "hoursSinceLastReply": 2,
+      "language": "ja"
+    },
+    "expectedSegment": "follow",
+    "expectedRule": "follow_recovery"
+  }
+]
