@@ -2,12 +2,14 @@
 
 import React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert } from '@/types';
-import { X, MessageCircle, ArrowRight, Clock, Sparkles } from 'lucide-react';
+import { X, MessageCircle, ArrowRight, Clock, Sparkles, FileText, Reply, CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DEFAULT_WEIGHTS } from '@/lib/advanced-scoring';
 import { calculateUnifiedScore } from '@/lib/unified-scoring';
@@ -17,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { INTERNAL_EMAIL_DOMAINS } from '@/lib/constants/internal-domains';
 import { getSegmentMeta } from '@/lib/segments';
 import type { AiSuggestedSummary, SimilarCase } from '@/types/ai';
+import type { AlertNote } from '@/types/alert-note';
 import { RawEvent } from '@/lib/detection/models';
 import { buildFollowUpBody } from '@/lib/follow-template';
 
@@ -42,6 +45,14 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
   const [openMessageId, setOpenMessageId] = useState<string | null>(null);
   const [followStatus, setFollowStatus] = useState<string | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
+  const [notes, setNotes] = useState<AlertNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [noteSubmitting, setNoteSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +96,62 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
       cancelled = true;
     };
   }, [alert.id, alert.primarySegment, alert.threadId]);
+
+  useEffect(() => {
+    // ログインユーザー情報を取得
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem('salesguard_user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setCurrentUser({
+            name: user.name || user.email?.split('@')[0] || 'ユーザー',
+            email: user.email || alert.assignee || '',
+          });
+        } catch {
+          setCurrentUser({
+            name: alert.assignee?.split('@')[0] || 'ユーザー',
+            email: alert.assignee || '',
+          });
+        }
+      } else {
+        setCurrentUser({
+          name: alert.assignee?.split('@')[0] || 'ユーザー',
+          email: alert.assignee || '',
+        });
+      }
+    }
+  }, [alert.assignee, alert.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadNotes = async () => {
+      setNotesLoading(true);
+      try {
+        const resp = await fetch(`/api/alerts/${alert.id}/notes`);
+        if (!resp.ok) {
+          throw new Error('メモの取得に失敗しました');
+        }
+        const data = await resp.json();
+        if (!cancelled) {
+          setNotes(data.notes ?? []);
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setNotes([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setNotesLoading(false);
+        }
+      }
+    };
+    loadNotes();
+    return () => {
+      cancelled = true;
+    };
+  }, [alert.id]);
 
   const allEmails = Array.isArray(alert.emails) ? alert.emails : [];
   const sortedEmails = [...allEmails].sort(
@@ -249,6 +316,166 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
       setFollowLoading(false);
     }
   };
+
+  const handleNoteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!currentUser) {
+      setNoteError('ユーザー情報を取得できませんでした');
+      return;
+    }
+    if (!noteContent.trim()) {
+      setNoteError('内容を入力してください');
+      return;
+    }
+    setNoteError(null);
+    setNoteSubmitting(true);
+    try {
+      const resp = await fetch(`/api/alerts/${alert.id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author: currentUser.name,
+          content: noteContent.trim(),
+          parentId: null, // トップレベルコメント
+        }),
+      });
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || 'メモの保存に失敗しました');
+      }
+      const data = await resp.json();
+      // 新しいノートを追加して、スレッドを再構築
+      setNotes((prev) => {
+        const updated = [...prev, data.note];
+        return updated;
+      });
+      setNoteContent('');
+      toast.success('メモを追加しました');
+    } catch (error) {
+      console.error('Failed to add note', error);
+      setNoteError(error instanceof Error ? error.message : 'メモの保存に失敗しました');
+      toast.error('メモの保存に失敗しました');
+    } finally {
+      setNoteSubmitting(false);
+    }
+  };
+
+  const handleReplySubmit = async (parentId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (!currentUser) {
+      setNoteError('ユーザー情報を取得できませんでした');
+      return;
+    }
+    if (!replyContent.trim()) {
+      setNoteError('返信内容を入力してください');
+      return;
+    }
+    setNoteError(null);
+    setNoteSubmitting(true);
+    try {
+      const resp = await fetch(`/api/alerts/${alert.id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author: currentUser.name,
+          content: replyContent.trim(),
+          parentId: parentId,
+        }),
+      });
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || '返信の保存に失敗しました');
+      }
+      const data = await resp.json();
+      // 新しい返信を追加して、スレッドを再構築
+      setNotes((prev) => {
+        const updated = [...prev, data.note];
+        return updated;
+      });
+      setReplyContent('');
+      setReplyingTo(null);
+      toast.success('返信を追加しました');
+    } catch (error) {
+      console.error('Failed to add reply', error);
+      setNoteError(error instanceof Error ? error.message : '返信の保存に失敗しました');
+      toast.error('返信の保存に失敗しました');
+    } finally {
+      setNoteSubmitting(false);
+    }
+  };
+
+  const handleResolve = async (noteId: string) => {
+    if (!currentUser) return;
+    try {
+      const resp = await fetch(`/api/alerts/${alert.id}/notes/${noteId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resolved: true,
+          resolvedBy: currentUser.name,
+        }),
+      });
+      if (!resp.ok) {
+        throw new Error('解決フラグの更新に失敗しました');
+      }
+      const data = await resp.json();
+      setNotes((prev) =>
+        prev.map((note) => (note.id === noteId ? { ...note, ...data.note } : note))
+      );
+      toast.success('解決済みにマークしました');
+    } catch (error) {
+      console.error('Failed to resolve note', error);
+      toast.error('解決フラグの更新に失敗しました');
+    }
+  };
+
+  const handleUnresolve = async (noteId: string) => {
+    if (!currentUser) return;
+    try {
+      const resp = await fetch(`/api/alerts/${alert.id}/notes/${noteId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resolved: false,
+        }),
+      });
+      if (!resp.ok) {
+        throw new Error('解決フラグの更新に失敗しました');
+      }
+      const data = await resp.json();
+      setNotes((prev) =>
+        prev.map((note) => (note.id === noteId ? { ...note, ...data.note } : note))
+      );
+      toast.success('未解決に戻しました');
+    } catch (error) {
+      console.error('Failed to unresolve note', error);
+      toast.error('解決フラグの更新に失敗しました');
+    }
+  };
+
+  // コメントスレッドを構築（親コメントとその返信をグループ化）
+  const threads = useMemo(() => {
+    const topLevel = notes.filter((note) => !note.parentId);
+    const replies = notes.filter((note) => note.parentId);
+    const replyMap = new Map<string, AlertNote[]>();
+    replies.forEach((reply) => {
+      const parentId = reply.parentId!;
+      if (!replyMap.has(parentId)) {
+        replyMap.set(parentId, []);
+      }
+      replyMap.get(parentId)!.push(reply);
+    });
+    return topLevel.map((note) => ({
+      ...note,
+      replies: (replyMap.get(note.id) || []).sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
+    }));
+  }, [notes]);
 
   const loadEmailBody = async (messageKey: string, messageId?: string | null) => {
     if (!messageId || bodyCache[messageKey] || loadingBodyIds[messageKey]) return;
@@ -570,7 +797,7 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-3 h-9">
+            <TabsList className="grid w-full grid-cols-3 mb-3 h-9">
               <TabsTrigger value="insights" className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">詳細インサイト</span>
@@ -578,6 +805,10 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">スレッド履歴</span>
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">メモコメント</span>
               </TabsTrigger>
             </TabsList>
 
@@ -719,6 +950,195 @@ export function AlertDetail({ alert, onClose, onRefresh, onFollowCreated, isWork
                       })}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notes" className="space-y-3 mt-3">
+              <Card>
+                <CardHeader className="py-3 px-4 flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-slate-500" />
+                    対応メモ
+                  </CardTitle>
+                  {!notesLoading && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                      {threads.length}件
+                    </Badge>
+                  )}
+                </CardHeader>
+                <CardContent className="p-4 space-y-4 text-sm">
+                  {notesLoading ? (
+                    <p className="text-slate-500 text-sm">メモを読み込み中です...</p>
+                  ) : threads.length === 0 ? (
+                    <p className="text-slate-500 text-sm">まだメモは登録されていません。</p>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
+                      {threads.map((thread) => (
+                        <div key={thread.id} className="space-y-2">
+                          {/* 親コメント */}
+                          <div
+                            className={cn(
+                              'border rounded-lg px-3 py-2.5 transition-colors',
+                              thread.resolved
+                                ? 'bg-emerald-50/50 border-emerald-200'
+                                : 'bg-slate-50 border-slate-200'
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  {thread.resolved ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 text-slate-400" />
+                                  )}
+                                  <span className="font-semibold text-slate-700 text-xs">
+                                    {thread.author || '記入者未設定'}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-slate-500">
+                                  {formatDateTime(thread.createdAt)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {!thread.resolved && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleResolve(thread.id)}
+                                  >
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    解決
+                                  </Button>
+                                )}
+                                {thread.resolved && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleUnresolve(thread.id)}
+                                  >
+                                    <Circle className="h-3 w-3 mr-1" />
+                                    未解決
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => {
+                                    setReplyingTo(replyingTo === thread.id ? null : thread.id);
+                                    setReplyContent('');
+                                  }}
+                                >
+                                  <Reply className="h-3 w-3 mr-1" />
+                                  返信
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-slate-800 whitespace-pre-line text-sm mb-2">
+                              {thread.content}
+                            </div>
+                            {thread.resolved && thread.resolvedBy && (
+                              <div className="text-xs text-emerald-600 mt-1">
+                                ✓ {thread.resolvedBy}が解決済みにマーク
+                                {thread.resolvedAt && ` (${formatDateTime(thread.resolvedAt)})`}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 返信フォーム */}
+                          {replyingTo === thread.id && (
+                            <div className="ml-4 border-l-2 border-slate-200 pl-3 space-y-2">
+                              <Textarea
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                rows={2}
+                                placeholder="返信を入力..."
+                                disabled={noteSubmitting}
+                                className="text-sm"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={(e) => handleReplySubmit(thread.id, e)}
+                                  disabled={noteSubmitting || !replyContent.trim()}
+                                  className="h-7 text-xs"
+                                >
+                                  {noteSubmitting ? '送信中...' : '返信'}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setReplyingTo(null);
+                                    setReplyContent('');
+                                  }}
+                                  className="h-7 text-xs"
+                                >
+                                  キャンセル
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 返信コメント */}
+                          {thread.replies && thread.replies.length > 0 && (
+                            <div className="ml-4 border-l-2 border-slate-200 pl-3 space-y-2">
+                              {thread.replies.map((reply) => (
+                                <div
+                                  key={reply.id}
+                                  className="bg-white border rounded-lg px-3 py-2 border-slate-200"
+                                >
+                                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                    <span className="font-semibold text-slate-700">
+                                      {reply.author || '記入者未設定'}
+                                    </span>
+                                    <span>{formatDateTime(reply.createdAt)}</span>
+                                  </div>
+                                  <div className="text-slate-800 whitespace-pre-line text-sm">
+                                    {reply.content}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {noteError && <p className="text-xs text-red-600">{noteError}</p>}
+
+                  {/* 新規コメントフォーム */}
+                  <form onSubmit={handleNoteSubmit} className="space-y-3 border-t pt-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-500">
+                        コメントを追加 {currentUser && `(${currentUser.name})`}
+                      </label>
+                      <Textarea
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        rows={3}
+                        placeholder="対応状況・次のアクションなどを入力"
+                        disabled={noteSubmitting}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        type="submit" 
+                        disabled={noteSubmitting || !noteContent.trim()} 
+                        size="sm" 
+                        className="h-8 text-xs"
+                      >
+                        {noteSubmitting ? '送信中...' : 'コメントを追加'}
+                      </Button>
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             </TabsContent>
